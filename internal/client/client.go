@@ -31,7 +31,7 @@ func (c *Client) Run() {
 			logrus.Error(fmt.Sprintf("run error: %v", err))
 		}
 		logrus.Warn(fmt.Sprintf("Reconnecting..."))
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second * 2)
 	}
 }
 
@@ -53,12 +53,16 @@ func (c *Client) run() error {
 	if err != nil {
 		return err
 	}
-	logrus.Debug("handshake success")
+
 	// 创建 smux
-	mux, err := smux.Client(conn, nil)
+	smuxconfig := smux.DefaultConfig()
+	smuxconfig.KeepAliveInterval = 1 * time.Second
+	smuxconfig.KeepAliveTimeout = 2 * time.Second
+	mux, err := smux.Client(conn, smuxconfig)
 	if err != nil {
 		return err
 	}
+	logrus.Debug("handshake success")
 	defer mux.Close()
 	for {
 		stream, err := mux.AcceptStream()

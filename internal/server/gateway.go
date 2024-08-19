@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"net"
-	"time"
 
 	"github.com/atopos31/go-veilink/internal/config"
 	"github.com/atopos31/go-veilink/pkg"
@@ -30,8 +29,7 @@ func NewGateway(conf config.ServerConfig, sessionMgr *SessionManager) *Gateway {
 }
 
 func (g *Gateway) Run() error {
-	go g.checkOnlineInterval()
-
+	go g.sessionMgr.DebugInfo()
 	gatWayListener, errr := net.Listen("tcp", g.addr)
 	if errr != nil {
 		return errr
@@ -44,6 +42,7 @@ func (g *Gateway) Run() error {
 		if err != nil {
 			return err
 		}
+		logrus.Debug(fmt.Sprintf("accept connection from %s", conn.RemoteAddr()))
 		go g.handleConn(conn)
 	}
 }
@@ -69,19 +68,3 @@ func (g *Gateway) handleConn(conn net.Conn) {
 	}
 }
 
-func (gw *Gateway) checkOnlineInterval() {
-	tick := time.NewTicker(time.Second * 3)
-	defer tick.Stop()
-	for range tick.C {
-		logrus.Debug(fmt.Sprintf("online client count %d/%d",len(gw.sessionMgr.sessions),gw.sessionMgr.count))
-		gw.sessionMgr.Range(func(k string, v *Session) bool {
-			if v.Connection.IsClosed() {
-				logrus.Debug(fmt.Sprintf("session %s is offline", v.ClientID))
-				return false
-			}
-
-			logrus.Debug(fmt.Sprintf("session %s is online", v.ClientID))
-			return true
-		})
-	}
-}

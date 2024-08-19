@@ -2,9 +2,12 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"sync"
+	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/xtaci/smux"
 )
 
@@ -25,6 +28,7 @@ type SessionManager struct {
 }
 
 func NewSessionManager(count int) *SessionManager {
+
 	return &SessionManager{
 		count:    count,
 		sessions: make(map[string]*Session),
@@ -50,7 +54,10 @@ func (sm *SessionManager) AddSession(clientID string, conn net.Conn) (*Session, 
 	if oldsess != nil {
 		return nil, ErrClientIsOnline
 	}
-	muxsess, err := smux.Server(conn, nil)
+	smuxconfig := smux.DefaultConfig()
+	smuxconfig.KeepAliveInterval = 1 * time.Second
+	smuxconfig.KeepAliveTimeout = 2 * time.Second
+	muxsess, err := smux.Server(conn, smuxconfig)
 	if err != nil {
 		return nil, err
 	}
@@ -59,18 +66,32 @@ func (sm *SessionManager) AddSession(clientID string, conn net.Conn) (*Session, 
 		ClientID:   clientID,
 		Connection: muxsess,
 	}
+	go sm.CheckAlive(clientID)
 	sm.sessions[clientID] = sess
 	return sess, nil
 }
 
-func (sm *SessionManager) Range(f func(k string, v *Session) bool) {
+// 监听客户端离线后删除session
+func (sm *SessionManager) CheckAlive(clientID string) {
+	logrus.Debug(fmt.Sprintf("client %s start online", clientID))
+	<-sm.sessions[clientID].Connection.CloseChan()
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
+	delete(sm.sessions, clientID)
+	logrus.Debug(fmt.Sprintf("client %s is offline", clientID))
+}
 
-	for k, v := range sm.sessions {
-		ok := f(k, v)
-		if !ok {
-			delete(sm.sessions, k)
+// Debbug online info
+func (sm *SessionManager) DebugInfo() {
+	ticker := time.NewTicker(4 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		sm.mu.Lock()
+		logrus.Debug(fmt.Sprintf("↓↓ session is online: %d/%d", len(sm.sessions), sm.count))
+		for k := range sm.sessions {
+			logrus.Debug(k)
 		}
+		sm.mu.Unlock()
 	}
+
 }

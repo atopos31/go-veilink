@@ -10,20 +10,6 @@ type ClientConfig struct {
 	ClientID   string `mapstructure:"client_id"`
 }
 
-func NewClientConfig(configPath string) ClientConfig {
-	confViper := viper.New()
-	
-	confViper.SetConfigFile(configPath)
-	var config ClientConfig
-	if err := confViper.ReadInConfig(); err != nil {
-		panic(err)
-	}
-	if err := confViper.Unmarshal(&config); err != nil {
-		panic(err)
-	}
-	return config
-}
-
 type ServerConfig struct {
 	Gateway         Gateway    `mapstructure:"gateway"`
 	ListenerConfigs []Listener `mapstructure:"listeners"`

@@ -71,7 +71,7 @@ func (sm *SessionManager) AddSession(clientID string, conn net.Conn) (*Session, 
 	return sess, nil
 }
 
-// 监听客户端离线后删除session
+// 检测到客户端离线后删除session
 func (sm *SessionManager) CheckAlive(clientID string) {
 	logrus.Debug(fmt.Sprintf("client %s start online", clientID))
 	<-sm.sessions[clientID].Connection.CloseChan()

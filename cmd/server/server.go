@@ -16,7 +16,8 @@ func main() {
 	})
 	logrus.SetLevel(logrus.DebugLevel)
 
-	sessionMgr := server.NewSessionManager(len(config.ListenerConfigs))
+	listenerCount := len(config.ListenerConfigs)
+	sessionMgr := server.NewSessionManager(listenerCount)
 	gw := server.NewGateway(config, sessionMgr)
 
 	for _, listenerConfig := range config.ListenerConfigs {
@@ -41,5 +42,4 @@ func main() {
 	if err := gw.Run(); err != nil {
 		panic(err)
 	}
-	
 }

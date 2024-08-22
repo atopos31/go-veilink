@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/atopos31/go-veilink/internal/config"
@@ -9,7 +10,13 @@ import (
 )
 
 func main() {
-	config := config.NewServerConfig("../../internal/config/server.toml")
+	var configPath string
+	flag.StringVar(&configPath, "c", "", "path to config file")
+	flag.Parse()
+	if configPath == "" {
+		panic("config path is required")
+	}
+	config := config.NewServerConfig(configPath)
 	logrus.SetFormatter(&logrus.TextFormatter{
 		TimestampFormat: "2006-01-02 15:04:05",
 		FullTimestamp:   true,

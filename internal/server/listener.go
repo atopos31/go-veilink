@@ -101,7 +101,7 @@ func (l *Listener) handleConn(conn net.Conn) {
 	// }()
 	// io.Copy(conn, tunnelConn)
 	in,out  := pkg.Join(conn, tunnelConn)
-	logrus.Infof("in: %d bytes, out: %d bytes", in, out)
+	logrus.Infof("%s in: %d bytes, out: %d bytes", l.listenerConfig.ClientID,in, out)
 }
 
 func (l *Listener) Close() {

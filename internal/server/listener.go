@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"sync"
 	"time"
@@ -95,12 +94,14 @@ func (l *Listener) handleConn(conn net.Conn) {
 	}
 
 	// 双向数据拷贝
-	go func() {
-		defer tunnelConn.Close()
-		defer conn.Close()
-		io.Copy(tunnelConn, conn)
-	}()
-	io.Copy(conn, tunnelConn)
+	// go func() {
+	// 	defer tunnelConn.Close()
+	// 	defer conn.Close()
+	// 	io.Copy(tunnelConn, conn)
+	// }()
+	// io.Copy(conn, tunnelConn)
+	in,out  := pkg.Join(conn, tunnelConn)
+	logrus.Infof("in: %d bytes, out: %d bytes", in, out)
 }
 
 func (l *Listener) Close() {

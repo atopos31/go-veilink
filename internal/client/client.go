@@ -93,11 +93,7 @@ func (c *Client) handleStream(stream net.Conn) {
 	default:
 		logrus.Error(fmt.Sprintf("Unsupported protocol: %s", vp.PublicProtocol))
 	}
-
-	go func() {
-		defer localConn.Close()
-		defer stream.Close()
-		io.Copy(localConn, stream)
-	}()
-	io.Copy(stream, localConn)
+	
+	in, out := pkg.Join(localConn, stream)
+	logrus.Infof("in: %d bytes, out: %d bytes", in, out)
 }

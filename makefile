@@ -1,3 +1,6 @@
 build:
-	@go build -o ./bin/client ./cmd/client/client.go
-	@go build -o ./bin/server ./cmd/server/server.go
+	@GOOS=$(os) GOARCH=$(arch) go build -o ./bin/veilink_client_$(os)_$(arch) ./cmd/client/client.go
+	@GOOS=$(os) GOARCH=$(arch) go build -o ./bin/veilink_server_$(os)_$(arch) ./cmd/server/server.go
+
+os ?= linux
+arch ?= amd64

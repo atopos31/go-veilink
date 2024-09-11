@@ -1,5 +1,5 @@
 # go-veilink
-Go语言实现内网穿透工具，支持TCP协议。
+Go语言实现内网穿透工具，支持TCP/UDP协议。
 ## 编译
 ```bash
 $ make build os=linux arch=amd64
@@ -15,4 +15,4 @@ $ ./bin/veilink_server_linux_amd64 -c ../internal/config/server.toml
 $ ./bin/veilink_client_linux_amd64 -ip [server ip] -port [server port] -id [client id]
 ```
 ## 原理图
-![](./docs/image.png)
+![](./docs/velink.drawio.png)

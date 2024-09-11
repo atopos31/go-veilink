@@ -35,7 +35,7 @@ func (g *Gateway) Run() error {
 		return errr
 	}
 	defer gatWayListener.Close()
-	logrus.Debug(fmt.Sprintf("Gateway is running on %s",g.addr))
+	logrus.Debug(fmt.Sprintf("Gateway is running on %s", g.addr))
 
 	for {
 		conn, err := gatWayListener.Accept()
@@ -67,4 +67,3 @@ func (g *Gateway) handleConn(conn net.Conn) {
 		return
 	}
 }
-

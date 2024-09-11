@@ -4,3 +4,6 @@ build:
 
 os ?= linux
 arch ?= amd64
+
+fmt:
+	@go fmt ./...

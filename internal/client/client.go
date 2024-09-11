@@ -82,18 +82,63 @@ func (c *Client) handleStream(stream net.Conn) {
 	}
 
 	var localConn net.Conn
+	var err error
 	switch vp.PublicProtocol {
 	case "tcp":
-		var err error
 		localConn, err = net.Dial("tcp", fmt.Sprintf("%s:%d", vp.InternalIP, vp.InternalPort))
 		if err != nil {
 			logrus.Error(fmt.Sprintf("Dial error: %v", err))
 			return
 		}
+		in, out := pkg.Join(localConn, stream)
+		logrus.Infof("in: %d bytes, out: %d bytes", in, out)
+	case "udp":
+		localConn, err = net.Dial("udp", fmt.Sprintf("%s:%d", vp.InternalIP, vp.InternalPort))
+		if err != nil {
+			logrus.Error(fmt.Sprintf("Dial error: %v", err))
+			return
+		}
+		go func() {
+			defer localConn.Close()
+			defer stream.Close()
+			buf := make([]byte, 1024*64)
+			for {
+				nr,err := localConn.Read(buf)
+				if err != nil {
+					logrus.Error(fmt.Sprintf("Decode error: %v", err))
+					break
+				}
+				p := pkg.UDPpacket(buf[:nr])
+				body , err := p.Encode()
+				if err != nil {
+					logrus.Error(fmt.Sprintf("Encode error: %v", err))
+					break
+				}
+
+				_,err  = stream.Write(body)
+				if err != nil {
+					logrus.Error(fmt.Sprintf("Write error: %v", err))
+					break
+				}
+			}
+		}()
+
+		p := pkg.UDPpacket{}
+		for {
+			err := p.Decode(stream)
+			if err != nil {
+				logrus.Error(fmt.Sprintf("Decode error: %v", err))
+				break
+			}
+			_,err  = localConn.Write(p)
+			if err != nil {
+				logrus.Error(fmt.Sprintf("Write error: %v", err))
+				break
+			}
+		}
 	default:
-		logrus.Error(fmt.Sprintf("Unsupported protocol: %s", vp.PublicProtocol))
+		logrus.Warn(fmt.Sprintf("Unsupported protocol: %s", vp.PublicProtocol))
+		return
 	}
-	
-	in, out := pkg.Join(localConn, stream)
-	logrus.Infof("in: %d bytes, out: %d bytes", in, out)
+
 }

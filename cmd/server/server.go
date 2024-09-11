@@ -25,22 +25,23 @@ func main() {
 
 	listenerCount := len(config.ListenerConfigs)
 	sessionMgr := server.NewSessionManager(listenerCount)
+	udpSessionMgr := server.NewUDPSessionManage()
 	gw := server.NewGateway(config, sessionMgr)
 
 	for _, listenerConfig := range config.ListenerConfigs {
-		listener := server.NewListener(&listenerConfig, sessionMgr)
+		listener := server.NewListener(&listenerConfig, sessionMgr,udpSessionMgr)
 		go func() {
 			defer listener.Close()
 			if err := listener.ListenAndServe(); err != nil {
 				panic(err)
 			}
 		}()
-		logrus.Debug(fmt.Sprintf("server %s:%d %s<=Veilink=>client %s %s:%d %s", 
-			listenerConfig.PublicIP, 
+		logrus.Debug(fmt.Sprintf("server %s:%d %s<=Veilink=>client %s %s:%d %s",
+			listenerConfig.PublicIP,
 			listenerConfig.PublicPort,
-			listenerConfig.PublicProtocol, 
-			listenerConfig.ClientID, 
-			listenerConfig.InternalIP, 
+			listenerConfig.PublicProtocol,
+			listenerConfig.ClientID,
+			listenerConfig.InternalIP,
 			listenerConfig.InternalPort,
 			listenerConfig.InternalProtocol,
 		))

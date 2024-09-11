@@ -16,6 +16,53 @@ var (
 	ErrClientIsOnline = errors.New("client is online")
 )
 
+type UDPsession struct {
+	RemoteAddr string
+	LocalAddr  string
+	tunnelConn net.Conn
+}
+
+type UDPSessionManage struct {
+	sessionMu sync.Mutex
+	sessions  map[string]*UDPsession
+}
+
+func NewUDPSessionManage() *UDPSessionManage {
+	return &UDPSessionManage{
+		sessions: make(map[string]*UDPsession),
+	}
+}
+
+func (usm *UDPSessionManage) Get(key string) (*UDPsession, error) {
+	usm.sessionMu.Lock()
+	defer usm.sessionMu.Unlock()
+
+	 session, ok := usm.sessions[key]
+	 if ok {
+		 return session, nil
+	 } else {
+		return nil, errors.New("not found")
+	 }
+}
+
+func (usm *UDPSessionManage) Add(key string, session *UDPsession) {
+	usm.sessionMu.Lock()
+	defer usm.sessionMu.Unlock()
+
+	usm.sessions[key] = session
+	go usm.CleanCache(key)
+}
+
+func (usm *UDPSessionManage) CleanCache(key string) {
+	tick := time.NewTicker(time.Second * 20)
+	defer tick.Stop()
+	for range tick.C {
+		usm.sessionMu.Lock()
+		delete(usm.sessions, key)
+		usm.sessionMu.Unlock()
+	}
+}
+
 type Session struct {
 	ClientID   string        // 客户端ID
 	Connection *smux.Session // 双向连接 server <=> client

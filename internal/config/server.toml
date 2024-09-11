@@ -4,9 +4,9 @@ port = 9527 # server port
 
 [[listeners]]
 client_id = "test" 
-public_protocol = "tcp" # 协议
+public_protocol = "udp" # 协议
 public_ip = "0.0.0.0" 
 public_port = 9091
-internal_protocol = "tcp"
-internal_ip = "127.0.0.1"
-internal_port = 8000
+internal_protocol = "udp"
+internal_ip = "114.114.114.114"
+internal_port = 53

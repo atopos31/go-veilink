@@ -5,18 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+
 )
 
 const (
 	version      = 0
 	cmdVP        = 0x0
 	cmdHandshake = 0x1
+	cmdHandudp   = 0x2
 )
 
 var (
 	ErrVersion   = errors.New("Invalid vp version error")
 	ErrCmd       = errors.New("Invalid vp cmd error")
 	ErrHandshake = errors.New("Invalid vp handshake error")
+	ErrHandudp   = errors.New("Invalid vp Handudp error")
 )
 
 // VeilinkProtocol Veilink协议
@@ -100,13 +103,49 @@ func (req *HandshakeReq) Decode(reader io.Reader) error {
 	_, err = io.ReadFull(reader, body)
 	if err != nil {
 		return err
-
 	}
 
 	err = json.Unmarshal(body, req)
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+type UDPpacket []byte
+
+func (pkt UDPpacket) Encode() ([]byte, error) {
+	hdr := make([]byte, 4)
+	hdr[0] = version
+	hdr[1] = cmdHandudp
+
+	binary.BigEndian.PutUint16(hdr[2:4], uint16(len(pkt)))
+	return append(hdr, pkt...), nil
+}
+
+func (pkt *UDPpacket) Decode(reader io.Reader) error {
+	hdr := make([]byte, 4)
+	hdr[0] = version
+	hdr[1] = cmdHandudp
+
+	_, err := io.ReadFull(reader, hdr)
+	if err != nil {
+		return err
+	}
+
+	cmd := hdr[1]
+	if cmd != cmdHandudp {
+		return ErrHandudp
+	}
+
+	bodyLen := binary.BigEndian.Uint16(hdr[2:4])
+	body := make([]byte, bodyLen)
+	_, err = io.ReadFull(reader, body)
+	if err != nil {  
+		return err
+	}
+	*pkt = body
 
 	return nil
 }

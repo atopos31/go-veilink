@@ -7,3 +7,6 @@ arch ?= amd64
 
 fmt:
 	@go fmt ./...
+
+clean:
+	@rm -rf ./bin/*

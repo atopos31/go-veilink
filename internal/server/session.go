@@ -75,7 +75,6 @@ type SessionManager struct {
 }
 
 func NewSessionManager(count int) *SessionManager {
-
 	return &SessionManager{
 		count:    count,
 		sessions: make(map[string]*Session),

@@ -126,18 +126,3 @@ func (sm *SessionManager) CheckAlive(clientID string) {
 	delete(sm.sessions, clientID)
 	logrus.Debug(fmt.Sprintf("client %s is offline", clientID))
 }
-
-// Debbug online info
-func (sm *SessionManager) DebugInfo() {
-	ticker := time.NewTicker(4 * time.Second)
-	defer ticker.Stop()
-	for range ticker.C {
-		sm.mu.Lock()
-		logrus.Debug(fmt.Sprintf("↓↓ session is online: %d/%d", len(sm.sessions), sm.count))
-		for k := range sm.sessions {
-			logrus.Debug(k)
-		}
-		sm.mu.Unlock()
-	}
-
-}

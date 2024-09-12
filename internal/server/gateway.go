@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/atopos31/go-veilink/internal/config"
 	"github.com/atopos31/go-veilink/pkg"
@@ -29,7 +30,7 @@ func NewGateway(conf config.ServerConfig, sessionMgr *SessionManager) *Gateway {
 }
 
 func (g *Gateway) Run() error {
-	go g.sessionMgr.DebugInfo()
+	go g.DebugInfo()
 	gatWayListener, errr := net.Listen("tcp", g.addr)
 	if errr != nil {
 		return errr
@@ -66,4 +67,18 @@ func (g *Gateway) handleConn(conn net.Conn) {
 		logrus.Error(fmt.Sprintf("failed to add session %v", err))
 		return
 	}
+}
+
+func (gw *Gateway) DebugInfo() {
+	ticker := time.NewTicker(4 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		gw.sessionMgr.mu.Lock()
+		logrus.Debug(fmt.Sprintf("↓↓ client is online: %d/%d", len(gw.sessionMgr.sessions), len(gw.clientIDs)))
+		for k := range gw.sessionMgr.sessions {
+			logrus.Debug(k)
+		}
+		gw.sessionMgr.mu.Unlock()
+	}
+
 }

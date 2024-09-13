@@ -15,4 +15,4 @@ $ ./bin/veilink_server_linux_amd64 -c ../internal/config/server.toml
 $ ./bin/veilink_client_linux_amd64 -ip [server ip] -port [server port] -id [client id]
 ```
 ## 原理图
-![](./docs/velink.drawio.png)
+![](./docs/velink_back.drawio.png)

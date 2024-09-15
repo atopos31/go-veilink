@@ -1,4 +1,4 @@
-# go-veilink
+# Veilink
 Go语言实现内网穿透工具，支持TCP/UDP协议。
 ## 编译
 ```bash

@@ -59,6 +59,7 @@ func (usm *UDPSessionManage) CleanCache(key string) {
 	for range tick.C {
 		usm.sessionMu.Lock()
 		delete(usm.sessions, key)
+		usm.sessions[key].tunnelConn.Close()
 		usm.sessionMu.Unlock()
 	}
 }

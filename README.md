@@ -1,5 +1,5 @@
 # Veilink
-Go语言实现内网穿透工具，支持TCP/UDP协议。
+Go语言实现的轻量级内网穿透工具，配置简单易用，支持TCP/UDP协议。
 ## 编译
 ```bash
 $ make build os=linux arch=amd64

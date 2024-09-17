@@ -37,12 +37,12 @@ func (usm *UDPSessionManage) Get(key string) (*UDPsession, error) {
 	usm.sessionMu.Lock()
 	defer usm.sessionMu.Unlock()
 
-	 session, ok := usm.sessions[key]
-	 if ok {
-		 return session, nil
-	 } else {
+	session, ok := usm.sessions[key]
+	if ok {
+		return session, nil
+	} else {
 		return nil, errors.New("not found")
-	 }
+	}
 }
 
 func (usm *UDPSessionManage) Add(key string, session *UDPsession) {
@@ -58,9 +58,10 @@ func (usm *UDPSessionManage) CleanCache(key string) {
 	defer tick.Stop()
 	for range tick.C {
 		usm.sessionMu.Lock()
-		delete(usm.sessions, key)
 		usm.sessions[key].tunnelConn.Close()
+		delete(usm.sessions, key)
 		usm.sessionMu.Unlock()
+		break
 	}
 }
 

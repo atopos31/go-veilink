@@ -1,7 +1,9 @@
 package server
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -138,6 +140,10 @@ func (l *Listener) udpReadFormClient(tunnelconn net.Conn, raddr net.Addr, conn n
 	for {
 		err := buffer.Decode(tunnelconn)
 		if err != nil {
+			if errors.Is(err,io.ErrClosedPipe) {
+				logrus.Warn(fmt.Sprintf("tunnelconn already close: %v", raddr))
+				break
+			}
 			logrus.Warn(fmt.Sprintf("decode udp packet fail: %v", err))
 			break
 		}

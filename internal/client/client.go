@@ -62,7 +62,8 @@ func (c *Client) run() error {
 	if err != nil {
 		return err
 	}
-	logrus.Debug("handshake success")
+	logrus.Debug("Handshake success！")
+	logrus.Debug(fmt.Sprintf("Success connect server: %s", c.serverAddr))
 	defer mux.Close()
 	for {
 		stream, err := mux.AcceptStream()

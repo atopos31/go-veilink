@@ -12,6 +12,7 @@ import (
 
 type Gateway struct {
 	addr       string
+	clientCount int
 	clientIDs  map[string]struct{}
 	sessionMgr *SessionManager
 }
@@ -24,6 +25,7 @@ func NewGateway(conf config.ServerConfig, sessionMgr *SessionManager) *Gateway {
 	addr := fmt.Sprintf("%s:%d", conf.Gateway.Ip, conf.Gateway.Port)
 	return &Gateway{
 		addr:       addr,
+		clientCount: len(clientIDsMap),
 		clientIDs:  clientIDsMap,
 		sessionMgr: sessionMgr,
 	}
@@ -74,7 +76,7 @@ func (gw *Gateway) DebugInfo() {
 	defer ticker.Stop()
 	for range ticker.C {
 		gw.sessionMgr.mu.Lock()
-		logrus.Debug(fmt.Sprintf("↓↓ client is online: %d/%d", len(gw.sessionMgr.sessions), len(gw.clientIDs)))
+		logrus.Debug(fmt.Sprintf("↓↓ client is online: %d/%d", len(gw.sessionMgr.sessions), gw.clientCount))
 		for k := range gw.sessionMgr.sessions {
 			logrus.Debug(k)
 		}

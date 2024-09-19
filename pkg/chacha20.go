@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/chacha20"
 )
 
-const DefaultKeyPath = "./TCPkey"
+const DefaultKeyPath = "./bin/TCPkey"
 
 type Chacha20Stream struct {
 	key     []byte

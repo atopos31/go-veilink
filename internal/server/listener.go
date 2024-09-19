@@ -30,6 +30,7 @@ type Listener struct {
 
 func NewListener(listenerConfig *config.Listener, sessionMgr *SessionManager, udpSessionMgr *UDPSessionManage) *Listener {
 	return &Listener{
+		Encrypt: listenerConfig.Encrypt,
 		listenerConfig: listenerConfig,
 		close:          make(chan struct{}),
 		sessionMgr:     sessionMgr,
@@ -57,7 +58,7 @@ func (l *Listener) listenerAndServerTCP() error {
 	defer tcpListener.Close()
 
 	l.listener = tcpListener
-
+	logrus.Debug(l.Encrypt)
 	if l.Encrypt {
 		key, err := pkg.GenChacha20Key()
 		if err != nil {
@@ -65,6 +66,7 @@ func (l *Listener) listenerAndServerTCP() error {
 		}
 		strKey := pkg.KeyByteToString(key)
 		if l.listenerConfig.EncryptKeyPath == "" {
+			logrus.Debug("write key to default path")
 			pkg.WriteKeyToFile(pkg.DefaultKeyPath, l.listenerConfig.ClientID, strKey)
 		} else {
 			pkg.WriteKeyToFile(l.listenerConfig.EncryptKeyPath, l.listenerConfig.ClientID, strKey)

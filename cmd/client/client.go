@@ -16,12 +16,14 @@ func main() {
 	logrus.SetLevel(logrus.DebugLevel)
 
 	config := config.ClientConfig{}
+	flag.StringVar(&config.Key, "key", "", "TCP key")
 	flag.StringVar(&config.ServerIp, "ip", "", "Server IP")
 	flag.IntVar(&config.ServerPort, "port", 0, "Server Port")
 	flag.StringVar(&config.ClientID, "id", "", "Client ID")
 	flag.BoolVar(&config.Encrypt, "encrypt", false, "Encrypt")
-	flag.StringVar(&config.TCPkey, "key", "", "TCP key")
+
 	flag.Parse()
 	client := client.NewClient(config)
+	logrus.Infof("Client started %v", config)
 	client.Run()
 }

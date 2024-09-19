@@ -15,13 +15,13 @@ import (
 type Client struct {
 	serverAddr string
 	clientID   string
-	TCPkey string
+	key     string
 }
 
 func NewClient(conf config.ClientConfig) *Client {
 	return &Client{
 		serverAddr: fmt.Sprintf("%s:%d", conf.ServerIp, conf.ServerPort),
-		TCPkey: conf.TCPkey,
+		key:     conf.Key,
 		clientID:   conf.ClientID,
 	}
 }
@@ -79,25 +79,24 @@ func (c *Client) run() error {
 func (c *Client) handleStream(tunnelConn pkg.VeilConn) {
 	defer tunnelConn.Close()
 	enc := &pkg.EncryptProtocl{}
-	encryptOn,err := enc.Check(tunnelConn)
+	encryptOn, err := enc.Check(tunnelConn)
 	if err != nil {
 		logrus.Error(fmt.Sprintf("Check error: %v", err))
 		return
 	}
 	if encryptOn {
-		byteKey,err  := pkg.KeyStringToByte(c.TCPkey)
+		byteKey, err := pkg.KeyStringToByte(c.key)
 		if err != nil {
 			logrus.Error(fmt.Sprintf("KeyStringToByte error: %v", err))
 			return
 		}
-		tunnelConn,err = pkg.NewChacha20Stream(byteKey, tunnelConn)
+		tunnelConn, err = pkg.NewChacha20Stream(byteKey, tunnelConn)
 		if err != nil {
 			logrus.Error(fmt.Sprintf("NewChacha20Stream error: %v", err))
 			return
 		}
 	}
 
-	
 	vp := &pkg.VeilinkProtocol{}
 	if err = vp.Decode(tunnelConn); err != nil {
 		logrus.Error(fmt.Sprintf("Decode error: %v", err))
@@ -125,19 +124,19 @@ func (c *Client) handleStream(tunnelConn pkg.VeilConn) {
 			defer tunnelConn.Close()
 			buf := make([]byte, 1024*64)
 			for {
-				nr,err := localConn.Read(buf)
+				nr, err := localConn.Read(buf)
 				if err != nil {
 					logrus.Error(fmt.Sprintf("Decode error: %v", err))
 					break
 				}
 				p := pkg.UDPpacket(buf[:nr])
-				body , err := p.Encode()
+				body, err := p.Encode()
 				if err != nil {
 					logrus.Error(fmt.Sprintf("Encode error: %v", err))
 					break
 				}
 
-				_,err  = tunnelConn.Write(body)
+				_, err = tunnelConn.Write(body)
 				if err != nil {
 					logrus.Error(fmt.Sprintf("Write error: %v", err))
 					break
@@ -152,7 +151,7 @@ func (c *Client) handleStream(tunnelConn pkg.VeilConn) {
 				logrus.Error(fmt.Sprintf("Decode error: %v", err))
 				break
 			}
-			_,err  = localConn.Write(p)
+			_, err = localConn.Write(p)
 			if err != nil {
 				logrus.Error(fmt.Sprintf("Write error: %v", err))
 				break

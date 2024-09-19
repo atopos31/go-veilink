@@ -9,7 +9,7 @@ type ClientConfig struct {
 	ServerPort int    `mapstructure:"server_port"`
 	ClientID   string `mapstructure:"client_id"`
 	Encrypt    bool   `mapstructure:"encrypt"`
-	TCPkey     string `mapstructure:"tcp_key"`
+	Key     string `mapstructure:"tcp_key"`
 }
 
 type ServerConfig struct {

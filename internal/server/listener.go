@@ -38,7 +38,7 @@ func NewListener(listenerConfig *config.Listener, keymap *keymap, sessionMgr *Se
 		}
 	}
 	return &Listener{
-		Encrypt:        listenerConfig.Encrypt,
+		Encrypt:        listenerConfig.Encrypt && listenerConfig.PublicProtocol == "tcp",
 		Key:            key,
 		listenerConfig: listenerConfig,
 		close:          make(chan struct{}),
@@ -102,15 +102,10 @@ func (l *Listener) listenerAndServerUDP() error {
 				logrus.Warn(fmt.Sprintf("send encrypt protocol fail: %v", err))
 				continue
 			}
-			if l.Encrypt {
-				tunnelConn, err = pkg.NewChacha20Stream(l.Key, tunnelConn)
-				if err != nil {
-					logrus.Warn(fmt.Sprintf("new chacha20 stream fail: %v", err))
-					continue
-				}
-			}
 
-			if err := l.sendEncryptProtocol(tunnelConn); err != nil {
+			// TODO UDP加密
+
+			if err := l.sendVeilinkProtocol(tunnelConn); err != nil {
 				logrus.Warn(fmt.Sprintf("send encrypt protocol fail: %v", err))
 				continue
 			}
@@ -204,7 +199,6 @@ func (l *Listener) sendVeilinkProtocol(conn pkg.VeilConn) error {
 		PublicProtocol:   l.listenerConfig.PublicProtocol,
 		PublicIP:         l.listenerConfig.PublicIP,
 		PublicPort:       l.listenerConfig.PublicPort,
-		InternalProtocol: l.listenerConfig.InternalProtocol,
 		InternalIP:       l.listenerConfig.InternalIP,
 		InternalPort:     l.listenerConfig.InternalPort,
 	}

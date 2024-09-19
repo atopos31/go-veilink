@@ -28,7 +28,6 @@ type Listener struct {
 	PublicProtocol   string `mapstructure:"public_protocol"`
 	PublicIP         string `mapstructure:"public_ip"`
 	PublicPort       uint16 `mapstructure:"public_port"`
-	InternalProtocol string `mapstructure:"internal_protocol"`
 	InternalIP       string `mapstructure:"internal_ip"`
 	InternalPort     uint16 `mapstructure:"internal_port"`
 }

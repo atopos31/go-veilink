@@ -37,14 +37,13 @@ func main() {
 				panic(err)
 			}
 		}()
-		logrus.Debug(fmt.Sprintf("server %s:%d %s<=Veilink=>client %s %s:%d %s",
+		logrus.Debug(fmt.Sprintf("server %s:%d <=Veilink %s=>client %s %s:%d",
 			listenerConfig.PublicIP,
 			listenerConfig.PublicPort,
 			listenerConfig.PublicProtocol,
 			listenerConfig.ClientID,
 			listenerConfig.InternalIP,
 			listenerConfig.InternalPort,
-			listenerConfig.InternalProtocol,
 		))
 	}
 

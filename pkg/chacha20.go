@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/chacha20"
 )
 
-const DefaultKeyPath = "./bin/TCPkey"
+const DefaultKeyPath = "./key"
 
 type Chacha20Stream struct {
 	key     []byte
@@ -101,6 +101,11 @@ func WriteKeyToFile(keyPath string, clientID string, key string) error {
 	keyFilePath.WriteRune(os.PathSeparator)
 	keyFilePath.WriteString(clientID)
 	keyFilePath.WriteString(".key")
+
+	err := os.Mkdir(keyPath,os.ModeDir)
+	if err != nil {
+		return err
+	}
 
 	file, err := os.OpenFile(keyFilePath.String(), os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {

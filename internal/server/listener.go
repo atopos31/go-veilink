@@ -28,9 +28,18 @@ type Listener struct {
 	udpSessionMgr  *UDPSessionManage
 }
 
-func NewListener(listenerConfig *config.Listener, sessionMgr *SessionManager, udpSessionMgr *UDPSessionManage) *Listener {
+func NewListener(listenerConfig *config.Listener, keymap *keymap, sessionMgr *SessionManager, udpSessionMgr *UDPSessionManage) *Listener {
+	var key []byte
+	var err error
+	if listenerConfig.Encrypt {
+		key, err = keymap.Get(listenerConfig.ClientID)
+		if err != nil {
+			panic(err)
+		}
+	}
 	return &Listener{
-		Encrypt: listenerConfig.Encrypt,
+		Encrypt:        listenerConfig.Encrypt,
+		Key:            key,
 		listenerConfig: listenerConfig,
 		close:          make(chan struct{}),
 		sessionMgr:     sessionMgr,
@@ -58,21 +67,7 @@ func (l *Listener) listenerAndServerTCP() error {
 	defer tcpListener.Close()
 
 	l.listener = tcpListener
-	logrus.Debug(l.Encrypt)
-	if l.Encrypt {
-		key, err := pkg.GenChacha20Key()
-		if err != nil {
-			return err
-		}
-		strKey := pkg.KeyByteToString(key)
-		if l.listenerConfig.EncryptKeyPath == "" {
-			logrus.Debug("write key to default path")
-			pkg.WriteKeyToFile(pkg.DefaultKeyPath, l.listenerConfig.ClientID, strKey)
-		} else {
-			pkg.WriteKeyToFile(l.listenerConfig.EncryptKeyPath, l.listenerConfig.ClientID, strKey)
-		}
-		l.Key = key
-	}
+
 	for {
 		conn, err := tcpListener.Accept()
 		if err != nil {
@@ -103,29 +98,20 @@ func (l *Listener) listenerAndServerUDP() error {
 				logrus.Warn(fmt.Sprintf("get session fail: %v", err))
 				continue
 			}
-
-			// 封装VeilinkProtocol
-			pp := &pkg.VeilinkProtocol{
-				ClientID:         l.listenerConfig.ClientID,
-				PublicProtocol:   l.listenerConfig.PublicProtocol,
-				PublicIP:         l.listenerConfig.PublicIP,
-				Encrypt:          l.Encrypt,
-				PublicPort:       l.listenerConfig.PublicPort,
-				InternalProtocol: l.listenerConfig.InternalProtocol,
-				InternalIP:       l.listenerConfig.InternalIP,
-				InternalPort:     l.listenerConfig.InternalPort,
-			}
-			ppBody, err := pp.Encode()
-			if err != nil {
-				logrus.Warn(fmt.Sprintf("encode proxyprotocol fail: %v", err))
+			if err := l.sendEncryptProtocol(tunnelConn); err != nil {
+				logrus.Warn(fmt.Sprintf("send encrypt protocol fail: %v", err))
 				continue
 			}
+			if l.Encrypt {
+				tunnelConn, err = pkg.NewChacha20Stream(l.Key, tunnelConn)
+				if err != nil {
+					logrus.Warn(fmt.Sprintf("new chacha20 stream fail: %v", err))
+					continue
+				}
+			}
 
-			tunnelConn.SetWriteDeadline(time.Now().Add(writeTimeout))
-			_, err = tunnelConn.Write(ppBody)
-			tunnelConn.SetWriteDeadline(time.Time{})
-			if err != nil {
-				logrus.Warn(fmt.Sprintf("write proxyprotocol fail: %v", err))
+			if err := l.sendEncryptProtocol(tunnelConn); err != nil {
+				logrus.Warn(fmt.Sprintf("send encrypt protocol fail: %v", err))
 				continue
 			}
 
@@ -153,7 +139,7 @@ func (l *Listener) listenerAndServerUDP() error {
 	return nil
 }
 
-func (l *Listener) udpReadFormClient(tunnelconn net.Conn, raddr net.Addr, conn net.PacketConn) {
+func (l *Listener) udpReadFormClient(tunnelconn pkg.VeilConn, raddr net.Addr, conn net.PacketConn) {
 	buffer := pkg.UDPpacket{}
 	for {
 		err := buffer.Decode(tunnelconn)
@@ -183,19 +169,36 @@ func (l *Listener) handleConn(conn net.Conn) {
 		logrus.Warn(fmt.Sprintf("get session fail: %v", err))
 		return
 	}
-	var tunnelConnX pkg.VeilConn
+	if err := l.sendEncryptProtocol(tunnelConn); err != nil {
+		logrus.Warn(fmt.Sprintf("send encrypt protocol fail: %v", err))
+		return
+	}
 	if l.Encrypt {
-		tunnelConnX, err = pkg.NewChacha20Stream(l.Key, tunnelConn)
+		tunnelConn, err = pkg.NewChacha20Stream(l.Key, tunnelConn)
 		if err != nil {
 			logrus.Warn(fmt.Sprintf("new chacha20 stream fail: %v", err))
 			return
 		}
-	} else {
-		tunnelConnX = tunnelConn
 	}
-	defer tunnelConnX.Close()
+	if err := l.sendVeilinkProtocol(tunnelConn); err != nil {
+		logrus.Warn(fmt.Sprintf("send veilink protocol fail: %v", err))
+		return
+	}
 
-	// 封装VeilinkProtocol
+	in, out := pkg.Join(conn, tunnelConn)
+	logrus.Infof("%s in: %d bytes, out: %d bytes", l.listenerConfig.ClientID, in, out)
+}
+
+func (l *Listener) sendEncryptProtocol(conn pkg.VeilConn) error {
+	enc := &pkg.EncryptProtocl{}
+	encByte := enc.Encode(l.Encrypt)
+	conn.SetWriteDeadline(time.Now().Add(writeTimeout))
+	_, err := conn.Write(encByte)
+	conn.SetWriteDeadline(time.Time{})
+	return err
+}
+
+func (l *Listener) sendVeilinkProtocol(conn pkg.VeilConn) error {
 	pp := &pkg.VeilinkProtocol{
 		ClientID:         l.listenerConfig.ClientID,
 		PublicProtocol:   l.listenerConfig.PublicProtocol,
@@ -207,22 +210,13 @@ func (l *Listener) handleConn(conn net.Conn) {
 	}
 	ppBody, err := pp.Encode()
 	if err != nil {
-		logrus.Warn(fmt.Sprintf("encode proxyprotocol fail: %v", err))
-		return
+		return err
 	}
-
-	tunnelConnX.SetWriteDeadline(time.Now().Add(writeTimeout))
-	_, err = tunnelConn.Write(ppBody)
-	tunnelConn.SetWriteDeadline(time.Time{})
-	if err != nil {
-		logrus.Warn(fmt.Sprintf("write proxyprotocol fail: %v", err))
-		return
-	}
-
-	in, out := pkg.Join(conn, tunnelConn)
-	logrus.Infof("%s in: %d bytes, out: %d bytes", l.listenerConfig.ClientID, in, out)
+	conn.SetWriteDeadline(time.Now().Add(writeTimeout))
+	_, err = conn.Write(ppBody)
+	conn.SetWriteDeadline(time.Time{})
+	return err
 }
-
 func (l *Listener) Close() {
 	l.closeOnce.Do(func() {
 		close(l.close)

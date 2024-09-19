@@ -14,11 +14,23 @@ const (
 	cmdHandudp   = 0x2
 )
 
+const (
+	cmdEncrypt   = 0x4
+	cmdEncryptOn = 0x1
+	cmdEncryptOf = 0x0
+)
+
+
+
+
+
 var (
 	ErrVersion   = errors.New("Invalid vp version error")
 	ErrCmd       = errors.New("Invalid vp cmd error")
 	ErrHandshake = errors.New("Invalid vp handshake error")
 	ErrHandudp   = errors.New("Invalid vp Handudp error")
+
+	ErrEncrypt   = errors.New("Invalid vp Encrypt error")
 )
 
 // VeilinkProtocol Veilink协议
@@ -26,7 +38,6 @@ type VeilinkProtocol struct {
 	ClientID         string // 客户端ID
 	PublicProtocol   string // 外网协议
 	PublicIP         string // 外网IP
-	Encrypt          bool   // 是否加密
 	PublicPort       uint16 // 外网端口
 	InternalProtocol string // 内网协议
 	InternalIP       string // 内网IP
@@ -148,4 +159,39 @@ func (pkt *UDPpacket) Decode(reader io.Reader) error {
 	*pkt = body
 
 	return nil
+}
+
+type EncryptProtocl []byte
+
+func (ep EncryptProtocl) Encode(envOn bool) []byte {
+	hdr := make([]byte, 2)
+	hdr[0] = cmdEncrypt
+	if envOn {
+		hdr[1] = cmdEncryptOn
+	} else {
+		hdr[1] = cmdEncryptOf
+	}
+	return hdr
+}
+
+func (ep EncryptProtocl) Check(reader io.Reader) (bool,error) {
+	hdr := make([]byte, 2)
+	_, err := io.ReadFull(reader, hdr)
+	if err != nil {
+		return false,err
+	}
+
+	cmd := hdr[0]
+	if cmd != cmdEncrypt {
+		return false,ErrEncrypt
+	}
+
+	encrypt := hdr[1]
+	if encrypt == cmdEncryptOn {
+		return true,nil
+	} else if encrypt == cmdEncryptOf {
+		return false,nil
+	} else {
+		return false,ErrEncrypt
+	}
 }

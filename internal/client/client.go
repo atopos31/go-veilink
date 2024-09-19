@@ -76,16 +76,35 @@ func (c *Client) run() error {
 	}
 }
 
-func (c *Client) handleStream(stream net.Conn) {
-	defer stream.Close()
+func (c *Client) handleStream(tunnelConn pkg.VeilConn) {
+	defer tunnelConn.Close()
+	enc := &pkg.EncryptProtocl{}
+	encryptOn,err := enc.Check(tunnelConn)
+	if err != nil {
+		logrus.Error(fmt.Sprintf("Check error: %v", err))
+		return
+	}
+	if encryptOn {
+		byteKey,err  := pkg.KeyStringToByte(c.TCPkey)
+		if err != nil {
+			logrus.Error(fmt.Sprintf("KeyStringToByte error: %v", err))
+			return
+		}
+		tunnelConn,err = pkg.NewChacha20Stream(byteKey, tunnelConn)
+		if err != nil {
+			logrus.Error(fmt.Sprintf("NewChacha20Stream error: %v", err))
+			return
+		}
+	}
+
+	
 	vp := &pkg.VeilinkProtocol{}
-	if err := vp.Decode(stream); err != nil {
+	if err = vp.Decode(tunnelConn); err != nil {
 		logrus.Error(fmt.Sprintf("Decode error: %v", err))
 		return
 	}
 
 	var localConn net.Conn
-	var err error
 	switch vp.PublicProtocol {
 	case "tcp":
 		localConn, err = net.Dial("tcp", fmt.Sprintf("%s:%d", vp.InternalIP, vp.InternalPort))
@@ -93,23 +112,7 @@ func (c *Client) handleStream(stream net.Conn) {
 			logrus.Error(fmt.Sprintf("Dial error: %v", err))
 			return
 		}
-		var streamX pkg.VeilConn
-		if vp.Encrypt {
-			key, err := pkg.KeyStringToByte(c.TCPkey)
-			if err != nil {
-				logrus.Error(fmt.Sprintf("KeyToByte error: %v", err))
-				return
-			}
-			streamX, err = pkg.NewChacha20Stream(key, stream)
-			if err != nil {
-				logrus.Error(fmt.Sprintf("NewChacha20Stream error: %v", err))
-				return
-			}
-			defer streamX.Close()
-		} else {
-			streamX = stream
-		}
-		in, out := pkg.Join(localConn, streamX)
+		in, out := pkg.Join(localConn, tunnelConn)
 		logrus.Infof("in: %d bytes, out: %d bytes", in, out)
 	case "udp":
 		localConn, err = net.Dial("udp", fmt.Sprintf("%s:%d", vp.InternalIP, vp.InternalPort))
@@ -119,7 +122,7 @@ func (c *Client) handleStream(stream net.Conn) {
 		}
 		go func() {
 			defer localConn.Close()
-			defer stream.Close()
+			defer tunnelConn.Close()
 			buf := make([]byte, 1024*64)
 			for {
 				nr,err := localConn.Read(buf)
@@ -134,7 +137,7 @@ func (c *Client) handleStream(stream net.Conn) {
 					break
 				}
 
-				_,err  = stream.Write(body)
+				_,err  = tunnelConn.Write(body)
 				if err != nil {
 					logrus.Error(fmt.Sprintf("Write error: %v", err))
 					break
@@ -144,7 +147,7 @@ func (c *Client) handleStream(stream net.Conn) {
 
 		p := pkg.UDPpacket{}
 		for {
-			err := p.Decode(stream)
+			err := p.Decode(tunnelConn)
 			if err != nil {
 				logrus.Error(fmt.Sprintf("Decode error: %v", err))
 				break

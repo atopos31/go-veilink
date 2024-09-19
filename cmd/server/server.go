@@ -26,10 +26,11 @@ func main() {
 	listenerCount := len(config.ListenerConfigs)
 	sessionMgr := server.NewSessionManager(listenerCount)
 	udpSessionMgr := server.NewUDPSessionManage()
+	keymap := server.NewKeyMap()
 	gw := server.NewGateway(config, sessionMgr)
 
 	for _, listenerConfig := range config.ListenerConfigs {
-		listener := server.NewListener(&listenerConfig, sessionMgr,udpSessionMgr)
+		listener := server.NewListener(&listenerConfig,keymap, sessionMgr,udpSessionMgr)
 		go func() {
 			defer listener.Close()
 			if err := listener.ListenAndServe(); err != nil {

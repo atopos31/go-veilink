@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/atopos31/go-veilink/pkg"
 	"github.com/sirupsen/logrus"
 	"github.com/xtaci/smux"
 )
@@ -19,7 +20,7 @@ var (
 type UDPsession struct {
 	RemoteAddr string
 	LocalAddr  string
-	tunnelConn  net.Conn
+	tunnelConn  pkg.VeilConn
 }
 
 type UDPSessionManage struct {
@@ -83,7 +84,7 @@ func NewSessionManager(count int) *SessionManager {
 	}
 }
 
-func (sm *SessionManager) GetSessionConnByID(clientID string) (net.Conn, error) {
+func (sm *SessionManager) GetSessionConnByID(clientID string) (pkg.VeilConn, error) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 

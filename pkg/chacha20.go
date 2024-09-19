@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
-	"net"
 	"os"
 	"strings"
 	"time"
@@ -19,10 +18,10 @@ type Chacha20Stream struct {
 	key     []byte
 	encoder *chacha20.Cipher
 	decoder *chacha20.Cipher
-	conn    net.Conn
+	conn    VeilConn
 }
 
-func NewChacha20Stream(key []byte, conn net.Conn) (*Chacha20Stream, error) {
+func NewChacha20Stream(key []byte, conn VeilConn) (*Chacha20Stream, error) {
 	s := &Chacha20Stream{
 		key:  key, // should be exactly 32 bytes
 		conn: conn,

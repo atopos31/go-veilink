@@ -35,7 +35,7 @@ internal_port = 8000
 ```
 ### client
 ```bash
-$ ./bin/veilink_client_linux_amd64 -ip=[server ip] -port=[server port] -id=[client id] -encrypt[encrypt true or false] -key=[encrypt key]
+$ ./bin/veilink_client_linux_amd64 -ip=[server ip] -port=[server port] -id=[client id] -encrypt=[encrypt true or false] -key=[encrypt key]
 ```
 
 ## TODO

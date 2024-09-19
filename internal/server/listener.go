@@ -107,6 +107,7 @@ func (l *Listener) listenerAndServerUDP() error {
 				ClientID:         l.listenerConfig.ClientID,
 				PublicProtocol:   l.listenerConfig.PublicProtocol,
 				PublicIP:         l.listenerConfig.PublicIP,
+				Encrypt:          l.Encrypt,
 				PublicPort:       l.listenerConfig.PublicPort,
 				InternalProtocol: l.listenerConfig.InternalProtocol,
 				InternalIP:       l.listenerConfig.InternalIP,

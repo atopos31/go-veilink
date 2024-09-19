@@ -15,11 +15,13 @@ import (
 type Client struct {
 	serverAddr string
 	clientID   string
+	TCPkey string
 }
 
 func NewClient(conf config.ClientConfig) *Client {
 	return &Client{
 		serverAddr: fmt.Sprintf("%s:%d", conf.ServerIp, conf.ServerPort),
+		TCPkey: conf.TCPkey,
 		clientID:   conf.ClientID,
 	}
 }
@@ -91,7 +93,23 @@ func (c *Client) handleStream(stream net.Conn) {
 			logrus.Error(fmt.Sprintf("Dial error: %v", err))
 			return
 		}
-		in, out := pkg.Join(localConn, stream)
+		var streamX pkg.VeilConn
+		if vp.Encrypt {
+			key, err := pkg.KeyStringToByte(c.TCPkey)
+			if err != nil {
+				logrus.Error(fmt.Sprintf("KeyToByte error: %v", err))
+				return
+			}
+			streamX, err = pkg.NewChacha20Stream(key, stream)
+			if err != nil {
+				logrus.Error(fmt.Sprintf("NewChacha20Stream error: %v", err))
+				return
+			}
+			defer streamX.Close()
+		} else {
+			streamX = stream
+		}
+		in, out := pkg.Join(localConn, streamX)
 		logrus.Infof("in: %d bytes, out: %d bytes", in, out)
 	case "udp":
 		localConn, err = net.Dial("udp", fmt.Sprintf("%s:%d", vp.InternalIP, vp.InternalPort))

@@ -18,15 +18,17 @@ var (
 )
 
 type Listener struct {
-	listenerConfig  *config.Listener
-	sessionMgr      *SessionManager
-	closeOnce       sync.Once
-	close           chan struct{}
-	listener        net.Listener
-	udpSessionMgr   *UDPSessionManage
+	listenerConfig *config.Listener
+	Encrypt        bool
+	Key            []byte
+	sessionMgr     *SessionManager
+	closeOnce      sync.Once
+	close          chan struct{}
+	listener       net.Listener
+	udpSessionMgr  *UDPSessionManage
 }
 
-func NewListener(listenerConfig *config.Listener, sessionMgr *SessionManager,udpSessionMgr *UDPSessionManage) *Listener {
+func NewListener(listenerConfig *config.Listener, sessionMgr *SessionManager, udpSessionMgr *UDPSessionManage) *Listener {
 	return &Listener{
 		listenerConfig: listenerConfig,
 		close:          make(chan struct{}),
@@ -55,6 +57,20 @@ func (l *Listener) listenerAndServerTCP() error {
 	defer tcpListener.Close()
 
 	l.listener = tcpListener
+
+	if l.Encrypt {
+		key, err := pkg.GenChacha20Key()
+		if err != nil {
+			return err
+		}
+		strKey := pkg.KeyByteToString(key)
+		if l.listenerConfig.EncryptKeyPath == "" {
+			pkg.WriteKeyToFile(pkg.DefaultKeyPath, l.listenerConfig.ClientID, strKey)
+		} else {
+			pkg.WriteKeyToFile(l.listenerConfig.EncryptKeyPath, l.listenerConfig.ClientID, strKey)
+		}
+		l.Key = key
+	}
 	for {
 		conn, err := tcpListener.Accept()
 		if err != nil {
@@ -77,7 +93,7 @@ func (l *Listener) listenerAndServerUDP() error {
 		if err != nil {
 			break
 		}
-		udpSess,err := l.udpSessionMgr.Get(remoteAddr.String())
+		udpSess, err := l.udpSessionMgr.Get(remoteAddr.String())
 		if err != nil {
 			// 查询session
 			tunnelConn, err := l.sessionMgr.GetSessionConnByID(l.listenerConfig.ClientID)
@@ -119,14 +135,13 @@ func (l *Listener) listenerAndServerUDP() error {
 			go l.udpReadFormClient(tunnelConn, remoteAddr, udpListener)
 		}
 
-
 		packet := pkg.UDPpacket(buffer[:n])
-		body ,err := packet.Encode()
+		body, err := packet.Encode()
 		if err != nil {
 			logrus.Warn(fmt.Sprintf("encode udp packet fail: %v", err))
 			continue
 		}
-		_,err  = udpSess.tunnelConn.Write(body)
+		_, err = udpSess.tunnelConn.Write(body)
 		if err != nil {
 			logrus.Warn(fmt.Sprintf("write udp packet fail: %v", err))
 			continue
@@ -140,7 +155,7 @@ func (l *Listener) udpReadFormClient(tunnelconn net.Conn, raddr net.Addr, conn n
 	for {
 		err := buffer.Decode(tunnelconn)
 		if err != nil {
-			if errors.Is(err,io.ErrClosedPipe) {
+			if errors.Is(err, io.ErrClosedPipe) {
 				logrus.Warn(fmt.Sprintf("tunnelconn already close: %v", raddr))
 				break
 			}
@@ -165,7 +180,17 @@ func (l *Listener) handleConn(conn net.Conn) {
 		logrus.Warn(fmt.Sprintf("get session fail: %v", err))
 		return
 	}
-	defer tunnelConn.Close()
+	var tunnelConnX pkg.VeilConn
+	if l.Encrypt {
+		tunnelConnX, err = pkg.NewChacha20Stream(l.Key, tunnelConn)
+		if err != nil {
+			logrus.Warn(fmt.Sprintf("new chacha20 stream fail: %v", err))
+			return
+		}
+	} else {
+		tunnelConnX = tunnelConn
+	}
+	defer tunnelConnX.Close()
 
 	// 封装VeilinkProtocol
 	pp := &pkg.VeilinkProtocol{
@@ -183,7 +208,7 @@ func (l *Listener) handleConn(conn net.Conn) {
 		return
 	}
 
-	tunnelConn.SetWriteDeadline(time.Now().Add(writeTimeout))
+	tunnelConnX.SetWriteDeadline(time.Now().Add(writeTimeout))
 	_, err = tunnelConn.Write(ppBody)
 	tunnelConn.SetWriteDeadline(time.Time{})
 	if err != nil {

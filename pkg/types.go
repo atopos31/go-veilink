@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-
 )
 
 const (
@@ -27,6 +26,7 @@ type VeilinkProtocol struct {
 	ClientID         string // 客户端ID
 	PublicProtocol   string // 外网协议
 	PublicIP         string // 外网IP
+	Encrypt          bool   // 是否加密
 	PublicPort       uint16 // 外网端口
 	InternalProtocol string // 内网协议
 	InternalIP       string // 内网IP
@@ -142,7 +142,7 @@ func (pkt *UDPpacket) Decode(reader io.Reader) error {
 	bodyLen := binary.BigEndian.Uint16(hdr[2:4])
 	body := make([]byte, bodyLen)
 	_, err = io.ReadFull(reader, body)
-	if err != nil {  
+	if err != nil {
 		return err
 	}
 	*pkt = body

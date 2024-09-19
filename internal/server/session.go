@@ -19,7 +19,7 @@ var (
 type UDPsession struct {
 	RemoteAddr string
 	LocalAddr  string
-	tunnelConn net.Conn
+	tunnelConn  net.Conn
 }
 
 type UDPSessionManage struct {

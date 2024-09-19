@@ -1,20 +1,22 @@
 [gateway]
 ip = "0.0.0.0" # server ip
-port = 9527 # server port
+port = 9527    # server port
 
 [[listeners]]
-client_id = "test" 
-public_protocol = "udp" # 协议
-public_ip = "0.0.0.0" 
+client_id = "test"
+encrypt = true                  # 是否开启加密
+encrypt_key_path = ""           # 加密密钥文件存放位置 不填或为空 则为 ./TCPkey/{client_id}.key
+public_protocol = "udp"         # 协议
+public_ip = "0.0.0.0"
 public_port = 9091
 internal_protocol = "udp"
 internal_ip = "114.114.114.114"
 internal_port = 53
 
 [[listeners]]
-client_id = "test" 
-public_protocol = "tcp" # 协议
-public_ip = "0.0.0.0" 
+client_id = "test"
+public_protocol = "tcp"   # 协议
+public_ip = "0.0.0.0"
 public_port = 9092
 internal_protocol = "tcp"
 internal_ip = "127.0.0.1"

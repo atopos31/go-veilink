@@ -11,7 +11,7 @@ $ make build os=linux arch=amd64
 $ ./bin/veilink_server_linux_amd64 -c [config file path]
 ```
 example config:
-```toml;
+```toml
 [gateway]
 ip = "0.0.0.0" # server ip
 port = 9527    # server port

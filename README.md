@@ -40,6 +40,8 @@ $ ./bin/veilink_client_linux_amd64 -ip=[server ip] -port=[server port] -id=[clie
 
 ## TODO
 - UDP协议加密
+- 对外提供SOCKS5协议代理
+- 将内网SOCKS5代理穿透到公网
 - webui动态管理
 ## 原理图
 ![](./docs/velink_back.drawio.png)

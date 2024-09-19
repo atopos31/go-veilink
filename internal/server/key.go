@@ -28,9 +28,10 @@ func (k *keymap) Get(clientID string) ([]byte, error) {
 		}
 		strKey := pkg.KeyByteToString(key)
 		pkg.WriteKeyToFile(pkg.DefaultKeyPath, clientID, strKey)
-		logrus.Debugf("write %s key to file success: %s",clientID, pkg.DefaultKeyPath)
+		logrus.Debugf("write %s key to file success: %s", clientID, pkg.DefaultKeyPath)
+	} else {
+		key = value.([]byte)
 	}
-	key = value.([]byte)
-	logrus.Debugf("%s key: %s", clientID, key)
+	logrus.Debugf("%s key: %s", clientID, pkg.KeyByteToString(key))
 	return key, nil
 }

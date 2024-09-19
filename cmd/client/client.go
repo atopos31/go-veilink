@@ -20,6 +20,7 @@ func main() {
 	flag.IntVar(&config.ServerPort, "port", 0, "Server Port")
 	flag.StringVar(&config.ClientID, "id", "", "Client ID")
 	flag.BoolVar(&config.Encrypt, "encrypt", false, "Encrypt")
+	flag.StringVar(&config.TCPkey, "key", "", "TCP key")
 	flag.Parse()
 	client := client.NewClient(config)
 	client.Run()

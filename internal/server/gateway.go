@@ -11,10 +11,10 @@ import (
 )
 
 type Gateway struct {
-	addr       string
+	addr        string
 	clientCount int
-	clientIDs  map[string]struct{}
-	sessionMgr *SessionManager
+	clientIDs   map[string]struct{}
+	sessionMgr  *SessionManager
 }
 
 func NewGateway(conf config.ServerConfig, sessionMgr *SessionManager) *Gateway {
@@ -24,10 +24,10 @@ func NewGateway(conf config.ServerConfig, sessionMgr *SessionManager) *Gateway {
 	}
 	addr := fmt.Sprintf("%s:%d", conf.Gateway.Ip, conf.Gateway.Port)
 	return &Gateway{
-		addr:       addr,
+		addr:        addr,
 		clientCount: len(clientIDsMap),
-		clientIDs:  clientIDsMap,
-		sessionMgr: sessionMgr,
+		clientIDs:   clientIDsMap,
+		sessionMgr:  sessionMgr,
 	}
 }
 
@@ -38,14 +38,14 @@ func (g *Gateway) Run() error {
 		return errr
 	}
 	defer gatWayListener.Close()
-	logrus.Debug(fmt.Sprintf("Gateway is running on %s", g.addr))
+	logrus.Debugf("Gateway is running on %s", g.addr)
 
 	for {
 		conn, err := gatWayListener.Accept()
 		if err != nil {
 			return err
 		}
-		logrus.Debug(fmt.Sprintf("accept connection from %s", conn.RemoteAddr()))
+		logrus.Debugf(fmt.Sprintf("accept connection from %s", conn.RemoteAddr()))
 		go g.handleConn(conn)
 	}
 }
@@ -53,20 +53,20 @@ func (g *Gateway) Run() error {
 func (g *Gateway) handleConn(conn net.Conn) {
 	handshakeReq := &pkg.HandshakeReq{}
 	if err := handshakeReq.Decode(conn); err != nil {
-		logrus.Error(fmt.Sprintf("failed to decode handshake request %v", err))
+		logrus.Errorf("failed to decode handshake request %v", err)
 		conn.Close()
 		return
 	}
 	if _, ok := g.clientIDs[handshakeReq.ClientID]; !ok {
-		logrus.Error(fmt.Sprintf("invalid client id %v", handshakeReq.ClientID))
+		logrus.Errorf("invalid client id %v", handshakeReq.ClientID)
 		conn.Close()
 		return
 	}
 
-	logrus.Debug(fmt.Sprintf("handshake request %v", handshakeReq))
+	logrus.Debugf("handshake request %v", handshakeReq)
 
 	if _, err := g.sessionMgr.AddSession(handshakeReq.ClientID, conn); err != nil {
-		logrus.Error(fmt.Sprintf("failed to add session %v", err))
+		logrus.Errorf("failed to add session %v", err)
 		return
 	}
 }
@@ -76,7 +76,7 @@ func (gw *Gateway) DebugInfo() {
 	defer ticker.Stop()
 	for range ticker.C {
 		gw.sessionMgr.mu.Lock()
-		logrus.Debug(fmt.Sprintf("↓↓ client is online: %d/%d", len(gw.sessionMgr.sessions), gw.clientCount))
+		logrus.Debugf("↓↓ client is online: %d/%d", len(gw.sessionMgr.sessions), gw.clientCount)
 		for k := range gw.sessionMgr.sessions {
 			logrus.Debug(k)
 		}

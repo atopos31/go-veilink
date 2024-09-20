@@ -15,13 +15,13 @@ import (
 type Client struct {
 	serverAddr string
 	clientID   string
-	key     string
+	key        string
 }
 
 func NewClient(conf config.ClientConfig) *Client {
 	return &Client{
 		serverAddr: fmt.Sprintf("%s:%d", conf.ServerIp, conf.ServerPort),
-		key:     conf.Key,
+		key:        conf.Key,
 		clientID:   conf.ClientID,
 	}
 }
@@ -30,9 +30,9 @@ func (c *Client) Run() {
 	for {
 		err := c.run()
 		if err != nil && err != io.EOF {
-			logrus.Error(fmt.Sprintf("run error: %v", err))
+			logrus.Errorf("run error: %v", err)
 		}
-		logrus.Warn(fmt.Sprintf("Reconnecting..."))
+		logrus.Warnf("Reconnecting...")
 		time.Sleep(time.Second * 2)
 	}
 }
@@ -65,7 +65,7 @@ func (c *Client) run() error {
 		return err
 	}
 	logrus.Debug("Handshake success！")
-	logrus.Debug(fmt.Sprintf("Success connect server: %s", c.serverAddr))
+	logrus.Debugf("Success connect server: %s", c.serverAddr)
 	defer mux.Close()
 	for {
 		stream, err := mux.AcceptStream()
@@ -81,25 +81,25 @@ func (c *Client) handleStream(tunnelConn pkg.VeilConn) {
 	enc := &pkg.EncryptProtocl{}
 	encryptOn, err := enc.Check(tunnelConn)
 	if err != nil {
-		logrus.Error(fmt.Sprintf("Check error: %v", err))
+		logrus.Errorf("Check error: %v", err)
 		return
 	}
 	if encryptOn {
 		byteKey, err := pkg.KeyStringToByte(c.key)
 		if err != nil {
-			logrus.Error(fmt.Sprintf("KeyStringToByte error: %v", err))
+			logrus.Errorf("KeyStringToByte error: %v", err)
 			return
 		}
 		tunnelConn, err = pkg.NewChacha20Stream(byteKey, tunnelConn)
 		if err != nil {
-			logrus.Error(fmt.Sprintf("NewChacha20Stream error: %v", err))
+			logrus.Errorf("NewChacha20Stream error: %v", err)
 			return
 		}
 	}
 
 	vp := &pkg.VeilinkProtocol{}
 	if err = vp.Decode(tunnelConn); err != nil {
-		logrus.Error(fmt.Sprintf("Decode error: %v", err))
+		logrus.Errorf("Decode error: %v", err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func (c *Client) handleStream(tunnelConn pkg.VeilConn) {
 	case "tcp":
 		localConn, err = net.Dial("tcp", fmt.Sprintf("%s:%d", vp.InternalIP, vp.InternalPort))
 		if err != nil {
-			logrus.Error(fmt.Sprintf("Dial error: %v", err))
+			logrus.Errorf("Dial error: %v", err)
 			return
 		}
 		in, out := pkg.Join(localConn, tunnelConn)
@@ -116,7 +116,7 @@ func (c *Client) handleStream(tunnelConn pkg.VeilConn) {
 	case "udp":
 		localConn, err = net.Dial("udp", fmt.Sprintf("%s:%d", vp.InternalIP, vp.InternalPort))
 		if err != nil {
-			logrus.Error(fmt.Sprintf("Dial error: %v", err))
+			logrus.Errorf("Dial error: %v", err)
 			return
 		}
 		go func() {
@@ -126,19 +126,19 @@ func (c *Client) handleStream(tunnelConn pkg.VeilConn) {
 			for {
 				nr, err := localConn.Read(buf)
 				if err != nil {
-					logrus.Error(fmt.Sprintf("Decode error: %v", err))
+					logrus.Errorf("Decode error: %v", err)
 					break
 				}
 				p := pkg.UDPpacket(buf[:nr])
 				body, err := p.Encode()
 				if err != nil {
-					logrus.Error(fmt.Sprintf("Encode error: %v", err))
+					logrus.Errorf("Encode error: %v", err)
 					break
 				}
 
 				_, err = tunnelConn.Write(body)
 				if err != nil {
-					logrus.Error(fmt.Sprintf("Write error: %v", err))
+					logrus.Errorf("Write error: %v", err)
 					break
 				}
 			}
@@ -148,17 +148,17 @@ func (c *Client) handleStream(tunnelConn pkg.VeilConn) {
 		for {
 			err := p.Decode(tunnelConn)
 			if err != nil {
-				logrus.Error(fmt.Sprintf("Decode error: %v", err))
+				logrus.Errorf("Decode error: %v", err)
 				break
 			}
 			_, err = localConn.Write(p)
 			if err != nil {
-				logrus.Error(fmt.Sprintf("Write error: %v", err))
+				logrus.Errorf("Write error: %v", err)
 				break
 			}
 		}
 	default:
-		logrus.Warn(fmt.Sprintf("Unsupported protocol: %s", vp.PublicProtocol))
+		logrus.Warnf("Unsupported protocol: %s", vp.PublicProtocol)
 		return
 	}
 

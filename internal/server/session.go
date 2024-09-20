@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -20,7 +19,7 @@ var (
 type UDPsession struct {
 	RemoteAddr string
 	LocalAddr  string
-	tunnelConn  pkg.VeilConn
+	tunnelConn pkg.VeilConn
 }
 
 type UDPSessionManage struct {
@@ -122,10 +121,10 @@ func (sm *SessionManager) AddSession(clientID string, conn net.Conn) (*Session, 
 
 // 检测到客户端离线后删除session
 func (sm *SessionManager) CheckAlive(clientID string) {
-	logrus.Debug(fmt.Sprintf("client %s start online", clientID))
+	logrus.Debugf("client %s start online", clientID)
 	<-sm.sessions[clientID].Connection.CloseChan()
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	delete(sm.sessions, clientID)
-	logrus.Debug(fmt.Sprintf("client %s is offline", clientID))
+	logrus.Debugf("client %s is offline", clientID)
 }

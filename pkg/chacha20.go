@@ -87,7 +87,7 @@ func GenChacha20Key() ([]byte, error) {
 	return key, nil
 }
 
-func KeyStringToByte(key string) ([]byte,error) {
+func KeyStringToByte(key string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(key)
 }
 
@@ -102,7 +102,7 @@ func WriteKeyToFile(keyPath string, clientID string, key string) error {
 	keyFilePath.WriteString(clientID)
 	keyFilePath.WriteString(".key")
 
-	err := os.Mkdir(keyPath,os.ModeDir)
+	err := os.Mkdir(keyPath, os.ModeDir)
 	if err != nil {
 		return err
 	}

@@ -9,7 +9,7 @@ type ClientConfig struct {
 	ServerPort int    `mapstructure:"server_port"`
 	ClientID   string `mapstructure:"client_id"`
 	Encrypt    bool   `mapstructure:"encrypt"`
-	Key     string `mapstructure:"tcp_key"`
+	Key        string `mapstructure:"tcp_key"`
 }
 
 type ServerConfig struct {
@@ -23,13 +23,13 @@ type Gateway struct {
 }
 
 type Listener struct {
-	ClientID         string `mapstructure:"client_id"`
-	Encrypt          bool   `mapstructure:"encrypt"`
-	PublicProtocol   string `mapstructure:"public_protocol"`
-	PublicIP         string `mapstructure:"public_ip"`
-	PublicPort       uint16 `mapstructure:"public_port"`
-	InternalIP       string `mapstructure:"internal_ip"`
-	InternalPort     uint16 `mapstructure:"internal_port"`
+	ClientID       string `mapstructure:"client_id"`
+	Encrypt        bool   `mapstructure:"encrypt"`
+	PublicProtocol string `mapstructure:"public_protocol"`
+	PublicIP       string `mapstructure:"public_ip"`
+	PublicPort     uint16 `mapstructure:"public_port"`
+	InternalIP     string `mapstructure:"internal_ip"`
+	InternalPort   uint16 `mapstructure:"internal_port"`
 }
 
 func NewServerConfig(configPath string) ServerConfig {

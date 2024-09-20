@@ -30,7 +30,7 @@ func main() {
 	gw := server.NewGateway(config, sessionMgr)
 
 	for _, listenerConfig := range config.ListenerConfigs {
-		listener := server.NewListener(&listenerConfig,keymap, sessionMgr,udpSessionMgr)
+		listener := server.NewListener(&listenerConfig, keymap, sessionMgr, udpSessionMgr)
 		go func() {
 			defer listener.Close()
 			if err := listener.ListenAndServe(); err != nil {

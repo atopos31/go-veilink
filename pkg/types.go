@@ -20,17 +20,13 @@ const (
 	cmdEncryptOf = 0x0
 )
 
-
-
-
-
 var (
 	ErrVersion   = errors.New("Invalid vp version error")
 	ErrCmd       = errors.New("Invalid vp cmd error")
 	ErrHandshake = errors.New("Invalid vp handshake error")
 	ErrHandudp   = errors.New("Invalid vp Handudp error")
 
-	ErrEncrypt   = errors.New("Invalid vp Encrypt error")
+	ErrEncrypt = errors.New("Invalid vp Encrypt error")
 )
 
 // VeilinkProtocol Veilink协议
@@ -174,24 +170,24 @@ func (ep EncryptProtocl) Encode(envOn bool) []byte {
 	return hdr
 }
 
-func (ep EncryptProtocl) Check(reader io.Reader) (bool,error) {
+func (ep EncryptProtocl) Check(reader io.Reader) (bool, error) {
 	hdr := make([]byte, 2)
 	_, err := io.ReadFull(reader, hdr)
 	if err != nil {
-		return false,err
+		return false, err
 	}
 
 	cmd := hdr[0]
 	if cmd != cmdEncrypt {
-		return false,ErrEncrypt
+		return false, ErrEncrypt
 	}
 
 	encrypt := hdr[1]
 	if encrypt == cmdEncryptOn {
-		return true,nil
+		return true, nil
 	} else if encrypt == cmdEncryptOf {
-		return false,nil
+		return false, nil
 	} else {
-		return false,ErrEncrypt
+		return false, ErrEncrypt
 	}
 }

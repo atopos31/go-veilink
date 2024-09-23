@@ -25,6 +25,7 @@ type Gateway struct {
 type Listener struct {
 	ClientID       string `mapstructure:"client_id"`
 	Encrypt        bool   `mapstructure:"encrypt"`
+	DebugInfo      bool   `mapstructure:"debug_info"`
 	PublicProtocol string `mapstructure:"public_protocol"`
 	PublicIP       string `mapstructure:"public_ip"`
 	PublicPort     uint16 `mapstructure:"public_port"`

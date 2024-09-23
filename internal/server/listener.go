@@ -246,3 +246,17 @@ func (l *Listener) PrintDebugInfo() {
 		l.listenerConfig.InternalPort,
 	))
 }
+
+func (l *Listener) DebugInfoTicker(d time.Duration) {
+	ticker := time.NewTicker(d)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-l.close:
+			return
+		case <-ticker.C:
+			l.PrintDebugInfo()
+			logrus.Debugf("listener: %s in: %d bytes, out: %d bytes", l.listenerConfig.ClientID, l.ioData.GetInput(), l.ioData.GetOutput())
+		}
+	}
+}

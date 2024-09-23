@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"time"
 
 	"github.com/atopos31/go-veilink/internal/config"
 	"github.com/atopos31/go-veilink/internal/server"
@@ -36,7 +37,9 @@ func main() {
 				panic(err)
 			}
 		}()
-		listener.PrintDebugInfo()
+		if listenerConfig.DebugInfo {
+			go listener.DebugInfoTicker(5 * time.Second)
+		}
 	}
 
 	if err := gw.Run(); err != nil {

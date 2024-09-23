@@ -26,6 +26,7 @@ type Listener struct {
 	close          chan struct{}
 	listener       net.Listener
 	udpSessionMgr  *UDPSessionManage
+	ioData         *IOdata
 }
 
 func NewListener(listenerConfig *config.Listener, keymap *keymap, sessionMgr *SessionManager, udpSessionMgr *UDPSessionManage) *Listener {
@@ -44,6 +45,7 @@ func NewListener(listenerConfig *config.Listener, keymap *keymap, sessionMgr *Se
 		close:          make(chan struct{}),
 		sessionMgr:     sessionMgr,
 		udpSessionMgr:  udpSessionMgr,
+		ioData:         new(IOdata),
 	}
 }
 
@@ -103,6 +105,9 @@ func (l *Listener) handleConn(conn net.Conn) {
 	}
 
 	in, out := pkg.Join(conn, tunnelConn)
+	// add io data
+	l.ioData.AddInput(in)
+	l.ioData.AddOutput(out)
 	logrus.Infof("%s in: %d bytes, out: %d bytes", l.listenerConfig.ClientID, in, out)
 }
 
@@ -161,11 +166,12 @@ func (l *Listener) listenerAndServerUDP() error {
 			logrus.Warnf("encode udp packet fail: %v", err)
 			continue
 		}
-		_, err = udpSess.tunnelConn.Write(body)
+		lenbody, err := udpSess.tunnelConn.Write(body)
 		if err != nil {
 			logrus.Warnf("write udp packet fail: %v", err)
 			continue
 		}
+		l.ioData.AddInput(int64(lenbody))
 	}
 	return nil
 }
@@ -183,11 +189,12 @@ func (l *Listener) udpReadFormClient(tunnelconn pkg.VeilConn, raddr net.Addr, co
 			break
 		}
 
-		_, err = conn.WriteTo(buffer, raddr)
+		lenbuffer, err := conn.WriteTo(buffer, raddr)
 		if err != nil {
 			logrus.Warnf("write udp packet fail: %v", err)
 			break
 		}
+		l.ioData.AddOutput(int64(lenbuffer))
 	}
 }
 
@@ -227,4 +234,29 @@ func (l *Listener) Close() {
 			l.listener.Close()
 		}
 	})
+}
+
+func (l *Listener) PrintDebugInfo() {
+	logrus.Debug(fmt.Sprintf("Listener: server %s:%d <=Veilink %s=>client %s %s:%d",
+		l.listenerConfig.PublicIP,
+		l.listenerConfig.PublicPort,
+		l.listenerConfig.PublicProtocol,
+		l.listenerConfig.ClientID,
+		l.listenerConfig.InternalIP,
+		l.listenerConfig.InternalPort,
+	))
+}
+
+func (l *Listener) DebugInfoTicker(d time.Duration) {
+	ticker := time.NewTicker(d)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-l.close:
+			return
+		case <-ticker.C:
+			l.PrintDebugInfo()
+			logrus.Debugf("listener: %s in: %d bytes, out: %d bytes", l.listenerConfig.ClientID, l.ioData.GetInput(), l.ioData.GetOutput())
+		}
+	}
 }

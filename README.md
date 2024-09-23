@@ -1,5 +1,5 @@
 # Veilink
-Go语言实现的轻量级内网穿透工具，配置简单易用，支持TCP/UDP协议，TCP协议支持流式chacha20加密。
+Go语言实现的轻量级内网穿透工具，配置简单易用，支持TCP/UDP协议，均支持流式chacha20加密。
 ## 编译
 ```bash
 $ make build os=linux arch=amd64
@@ -19,6 +19,7 @@ port = 9527    # server port
 [[listeners]]
 client_id = "test"
 public_protocol = "udp"         # 协议
+encrypt = true                  # 是否开启加密
 public_ip = "0.0.0.0"
 public_port = 9091
 internal_ip = "114.114.114.114"
@@ -26,7 +27,7 @@ internal_port = 53
 
 [[listeners]]
 client_id = "test"
-encrypt = true                  # 是否开启加密 仅支持tcp协议 生成key输出到控制台和./key/[client_id].key
+encrypt = true                  # 是否开启加密
 public_protocol = "tcp"   # 协议
 public_ip = "0.0.0.0"
 public_port = 9092
@@ -39,7 +40,6 @@ $ ./bin/veilink_client_linux_amd64 -ip=[server ip] -port=[server port] -id=[clie
 ```
 
 ## TODO
-- UDP协议加密
 - 对外提供SOCKS5协议代理
 - 将内网SOCKS5代理穿透到公网
 - webui动态管理

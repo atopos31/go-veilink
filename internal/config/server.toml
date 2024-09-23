@@ -4,6 +4,7 @@ port = 9527    # server port
 
 [[listeners]]
 client_id = "test"
+encrypt = true                  # 是否开启加密 仅支持tcp协议
 public_protocol = "udp"         # 协议
 public_ip = "0.0.0.0"
 public_port = 9091

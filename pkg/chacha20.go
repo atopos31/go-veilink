@@ -102,7 +102,7 @@ func WriteKeyToFile(keyPath string, clientID string, key string) error {
 	keyFilePath.WriteString(clientID)
 	keyFilePath.WriteString(".key")
 
-	err := os.Mkdir(keyPath, os.ModeDir)
+	err := os.MkdirAll(keyPath, os.ModeDir)
 	if err != nil {
 		return err
 	}

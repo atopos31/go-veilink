@@ -38,7 +38,7 @@ func NewListener(listenerConfig *config.Listener, keymap *keymap, sessionMgr *Se
 		}
 	}
 	return &Listener{
-		Encrypt:        listenerConfig.Encrypt && listenerConfig.PublicProtocol == "tcp",
+		Encrypt:        listenerConfig.Encrypt,
 		Key:            key,
 		listenerConfig: listenerConfig,
 		close:          make(chan struct{}),
@@ -134,6 +134,13 @@ func (l *Listener) listenerAndServerUDP() error {
 			}
 
 			// TODO UDP encrypt, so how to encrypt the data?
+			if l.Encrypt {
+				tunnelConn, err = pkg.NewChacha20Stream(l.Key, tunnelConn)
+				if err != nil {
+					logrus.Warnf("new chacha20 stream fail: %v", err)
+					continue
+				}
+			}
 
 			if err := l.sendVeilinkProtocol(tunnelConn); err != nil {
 				logrus.Warnf("send encrypt protocol fail: %v", err)

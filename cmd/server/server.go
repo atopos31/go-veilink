@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 
 	"github.com/atopos31/go-veilink/internal/config"
 	"github.com/atopos31/go-veilink/internal/server"
@@ -37,14 +36,7 @@ func main() {
 				panic(err)
 			}
 		}()
-		logrus.Debug(fmt.Sprintf("server %s:%d <=Veilink %s=>client %s %s:%d",
-			listenerConfig.PublicIP,
-			listenerConfig.PublicPort,
-			listenerConfig.PublicProtocol,
-			listenerConfig.ClientID,
-			listenerConfig.InternalIP,
-			listenerConfig.InternalPort,
-		))
+		listener.PrintDebugInfo()
 	}
 
 	if err := gw.Run(); err != nil {

@@ -133,7 +133,6 @@ func (l *Listener) listenerAndServerUDP() error {
 				continue
 			}
 
-			// TODO UDP encrypt, so how to encrypt the data?
 			if l.Encrypt {
 				tunnelConn, err = pkg.NewChacha20Stream(l.Key, tunnelConn)
 				if err != nil {

@@ -45,3 +45,10 @@ $ ./bin/veilink_client_linux_amd64 -ip=[server ip] -port=[server port] -id=[clie
 - webui动态管理
 ## 原理图
 ![](./docs/velink_back.drawio.png)
+## 关于TCP加密
+- 服务端启动时，若某个客户端的任意TCP穿透开启加密，则会随机生成一个32字节密钥，并使用Base64编码为字符串后输出到控制台和./key/[client_id].key。
+- 客户端启动时将该Key编码后的字符串作为参数传入，若客户端开启加密，则使用该Key对数据进行加密。
+- 服务端会发送一条消息到客户端，指示客户端是否开启加密。
+- 通过该Key，服务端和客户端都会重写tunnelConn的Write和Read方法，开启流式加密传输。
+### 示意图
+![](./docs/TCPencrytp.drawio.png)

@@ -32,16 +32,15 @@ func NewGateway(conf config.ServerConfig, sessionMgr *SessionManager) *Gateway {
 }
 
 func (g *Gateway) Run() error {
-	go g.DebugInfo()
-	gatWayListener, errr := net.Listen("tcp", g.addr)
+	gateWayListener, errr := net.Listen("tcp", g.addr)
 	if errr != nil {
 		return errr
 	}
-	defer gatWayListener.Close()
+	defer gateWayListener.Close()
 	logrus.Debugf("Gateway is running on %s", g.addr)
 
 	for {
-		conn, err := gatWayListener.Accept()
+		conn, err := gateWayListener.Accept()
 		if err != nil {
 			return err
 		}
@@ -71,8 +70,8 @@ func (g *Gateway) handleConn(conn net.Conn) {
 	}
 }
 
-func (gw *Gateway) DebugInfo() {
-	ticker := time.NewTicker(4 * time.Second)
+func (gw *Gateway) DebugInfoTicker(d time.Duration) {
+	ticker := time.NewTicker(d)
 	defer ticker.Stop()
 	for range ticker.C {
 		gw.sessionMgr.mu.Lock()

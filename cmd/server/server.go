@@ -17,11 +17,15 @@ func main() {
 		panic("config path is required")
 	}
 	config := config.NewServerConfig(configPath)
+	level, err := logrus.ParseLevel(config.LogLevel)
+	if err != nil {
+		panic(err)
+	}
+	logrus.SetLevel(level)
 	logrus.SetFormatter(&logrus.TextFormatter{
 		TimestampFormat: "2006-01-02 15:04:05",
 		FullTimestamp:   true,
 	})
-	logrus.SetLevel(logrus.DebugLevel)
 
 	listenerCount := len(config.ListenerConfigs)
 	sessionMgr := server.NewSessionManager(listenerCount)
@@ -40,6 +44,10 @@ func main() {
 		if listenerConfig.DebugInfo {
 			go listener.DebugInfoTicker(5 * time.Second)
 		}
+	}
+
+	if config.Gateway.DebugInfo {
+		go gw.DebugInfoTicker(5 * time.Second)
 	}
 
 	if err := gw.Run(); err != nil {

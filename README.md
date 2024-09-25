@@ -12,14 +12,18 @@ $ ./bin/veilink_server_linux_amd64 -c [config file path]
 ```
 example config:
 ```toml
+level= "warn" # 全局日志级别 trace, debug, info, warn, error, fatal , panic 
+
 [gateway]
-ip = "0.0.0.0" # server ip
-port = 9527    # server port
+ip = "0.0.0.0"    # server ip
+port = 9527       # server port
+debug_info = false # 是否开启调试
 
 [[listeners]]
 client_id = "test"
-public_protocol = "udp"         # 协议
 encrypt = true                  # 是否开启加密
+debug_info = false               # 是否开启调试
+public_protocol = "udp"         # 协议
 public_ip = "0.0.0.0"
 public_port = 9091
 internal_ip = "114.114.114.114"
@@ -27,7 +31,7 @@ internal_port = 53
 
 [[listeners]]
 client_id = "test"
-encrypt = true                  # 是否开启加密
+encrypt = true            # 是否开启加密 
 public_protocol = "tcp"   # 协议
 public_ip = "0.0.0.0"
 public_port = 9092

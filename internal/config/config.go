@@ -8,18 +8,21 @@ type ClientConfig struct {
 	ServerIp   string `mapstructure:"server_ip"`
 	ServerPort int    `mapstructure:"server_port"`
 	ClientID   string `mapstructure:"client_id"`
+	LogLevel   string `mapstructure:"level"`
 	Encrypt    bool   `mapstructure:"encrypt"`
 	Key        string `mapstructure:"tcp_key"`
 }
 
 type ServerConfig struct {
+	LogLevel        string     `mapstructure:"level"`
 	Gateway         Gateway    `mapstructure:"gateway"`
 	ListenerConfigs []Listener `mapstructure:"listeners"`
 }
 
 type Gateway struct {
-	Ip   string `mapstructure:"ip"`
-	Port int    `mapstructure:"port"`
+	Ip        string `mapstructure:"ip"`
+	Port      int    `mapstructure:"port"`
+	DebugInfo bool   `mapstructure:"debug_info"`
 }
 
 type Listener struct {

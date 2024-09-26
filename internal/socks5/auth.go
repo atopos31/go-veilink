@@ -5,21 +5,32 @@ import (
 	"io"
 )
 
-const (
-	socks5Version = 0x05
-)
-
 var (
 	UnsupportedProtocol = errors.New("Unsupported socks protocol!")
+	UnsupportMethod     = errors.New("Unsupported auth method!")
 )
 
 type method = byte
 
+/*
+			+----+----------+----------+
+	        |VER | NMETHODS | METHODS  |
+	        +----+----------+----------+
+	        | 1  |    1     | 1 to 255 |
+	        +----+----------+----------+
+*/
 type ClientAuthMessage struct {
 	Version byte
 	NMethod byte
 	Methods []method
 }
+
+const (
+	NoAuth   method = 0x00
+	GSSAPI   method = 0x01
+	UserPass method = 0x02
+	NoAccept method = 0xff
+)
 
 func NewClientAuthMessage(conn io.Reader) (*ClientAuthMessage, error) {
 	// 读取版本

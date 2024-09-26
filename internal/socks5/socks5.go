@@ -3,13 +3,19 @@ package socks5
 import (
 	"fmt"
 	"net"
+	"slices"
 
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	socks5Version = 0x05
+)
+
 type SOCKS5Server struct {
-	IP   string
-	Port int
+	IP         string
+	Port       int
+	AuthMethod method
 }
 
 func (s *SOCKS5Server) Run() error {
@@ -25,19 +31,20 @@ func (s *SOCKS5Server) Run() error {
 			logrus.Errorf("socks5 server accept error: %v", err)
 			continue
 		}
+		logrus.Debugf("new connection from %s", conn.RemoteAddr())
 
 		go func() {
 			defer conn.Close()
-			if err := handleConnection(conn); err != nil {
+			if err := s.handleConnection(conn); err != nil {
 				logrus.Errorf("handleConnection error: %v", err)
 			}
 		}()
 	}
 }
 
-func handleConnection(conn net.Conn) error {
+func (s *SOCKS5Server) handleConnection(conn net.Conn) error {
 	// 协商handleConnection
-	if err := auth(conn); err != nil {
+	if err := s.auth(conn); err != nil {
 		return err
 	}
 
@@ -48,10 +55,24 @@ func handleConnection(conn net.Conn) error {
 	return nil
 }
 
-func auth(conn net.Conn) error {
-	_, err := NewClientAuthMessage(conn)
+func (s *SOCKS5Server) auth(conn net.Conn) error {
+	clientMsg, err := NewClientAuthMessage(conn)
 	if err != nil {
 		return err
 	}
-	return nil
+	logrus.Debugf("clientMsg: %v", clientMsg)
+
+	serverMsg := []byte{socks5Version, s.AuthMethod}
+
+	// 如果服务端没有支持的认证方式
+	if !slices.Contains(clientMsg.Methods, s.AuthMethod) {
+		serverMsg[1] = NoAccept
+		if _, err = conn.Write(serverMsg); err != nil {
+			return err
+		}
+		return UnsupportMethod
+	}
+
+	_, err = conn.Write(serverMsg)
+	return err
 }

@@ -118,7 +118,7 @@ func NewClientRequestMessage(conn io.Reader) (*ClientRequestMessage, error) {
 		Cmd:     cmd,
 		Rsv:     rsv,
 		Atyp:    atyp,
-		DstAddr: net.IP(addrbyte).String(),
+		DstAddr: string(addrbyte),
 		DstPort: port,
 	}, nil
 }

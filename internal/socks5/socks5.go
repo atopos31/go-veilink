@@ -106,7 +106,6 @@ func (s *SOCKS5Server) request(conn net.Conn) (*ClientRequestMessage, error) {
 	replies := RepliesTODO()
 	req, err := NewClientRequestMessage(conn)
 	if err != nil {
-
 		if err := replies.WithREPByError(err).Wirte(conn); err != nil {
 			return nil, err
 		}

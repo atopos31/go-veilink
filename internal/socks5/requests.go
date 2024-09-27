@@ -17,7 +17,7 @@ var (
 type CMD = byte
 
 const (
-	Connect CMD = 0x01 //
+	Connect CMD = 0x01 
 	Bind    CMD = 0x02
 	UdpAss  CMD = 0x03
 )

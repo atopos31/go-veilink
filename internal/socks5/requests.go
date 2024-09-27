@@ -103,12 +103,7 @@ func NewClientRequestMessage(conn io.Reader) (*ClientRequestMessage, error) {
 		if _, err = io.ReadFull(conn, addrbuf); err != nil {
 			return nil, err
 		}
-		// 解析域名
-		netaddr, err := net.ResolveIPAddr("ip", string(addrbuf))
-		if err != nil {
-			return nil, err
-		}
-		addrbyte = netaddr.IP
+		addrbyte = addrbuf
 	}
 
 	// 读取端口

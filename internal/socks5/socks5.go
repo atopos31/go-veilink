@@ -5,6 +5,7 @@ import (
 	"net"
 	"slices"
 
+	"github.com/atopos31/go-veilink/pkg"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,6 +25,8 @@ func (s *SOCKS5Server) Run() error {
 	if err != nil {
 		return err
 	}
+
+	logrus.Infof("socks5 server listen on %s", addr)
 
 	for {
 		conn, err := listener.Accept()
@@ -49,9 +52,31 @@ func (s *SOCKS5Server) handleConnection(conn net.Conn) error {
 	}
 
 	// 请求handleConnection
+	req, err := s.request(conn)
+	if err != nil {
+		return err
+	}
+
+	replies := RepliesTODO()
+	remoteConn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", req.DstAddr, req.DstPort))
+	if err != nil {
+		logrus.Debugf("remote dial addr%s port%d error: %v", req.DstAddr, req.DstPort, err)
+		if err := replies.WithREP(REP_HOST_UNREACHABLE).WithATYP(req.Atyp).Wirte(conn); err != nil {
+			return err
+		}
+		return err
+	}
+	defer remoteConn.Close()
+
+	logrus.Debugf("localaddr: %s", remoteConn.LocalAddr())
+
+	if err := replies.WithREP(REP_SUCCEEDED).WithATYP(req.Atyp).Wirte(conn); err != nil {
+		return err
+	}
 
 	// 转发handleConnection
-
+	in, out := pkg.Join(conn, remoteConn)
+	logrus.Debugf("in:%d out:%d", in, out)
 	return nil
 }
 
@@ -75,4 +100,18 @@ func (s *SOCKS5Server) auth(conn net.Conn) error {
 
 	_, err = conn.Write(serverMsg)
 	return err
+}
+
+func (s *SOCKS5Server) request(conn net.Conn) (*ClientRequestMessage, error) {
+	replies := RepliesTODO()
+	req, err := NewClientRequestMessage(conn)
+	if err != nil {
+
+		if err := replies.WithREPByError(err).Wirte(conn); err != nil {
+			return nil, err
+		}
+		return nil, err
+	}
+
+	return req, nil
 }

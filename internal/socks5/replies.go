@@ -1,5 +1,10 @@
 package socks5
 
+import (
+	"io"
+	"net"
+)
+
 type REP = byte
 
 const (
@@ -15,10 +20,28 @@ const (
 	REP_UNASSIGNED                        REP = 0x09 // 未定义
 )
 
+/*
+		 	+----+-----+-------+------+----------+----------+
+	        |VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |
+	        +----+-----+-------+------+----------+----------+
+	        | 1  |  1  | X'00' |  1   | Variable |    2     |
+	        +----+-----+-------+------+----------+----------+
+*/
 type replies []byte
 
 func RepliesTODO() replies {
-	return []byte{socks5Version, REP_SUCCEEDED, RSV, IPv4}
+	return []byte{socks5Version, REP_SUCCEEDED, RSV, IPv4, 0, 0, 0, 0, 0, 0}
+}
+
+func (r replies) WithREPByError(err error) replies {
+	switch err {
+	case UnSupportCMD:
+		return r.WithREP(REP_COMMAND_NOT_SUPPORTED)
+	case UnSupportATYP:
+		return r.WithREP(REP_ADDRESS_TYPE_NOT_SUPPORTED)
+	default:
+		return r.WithREP(REP_GENERAL_SOCKS_SERVER_FAILURE)
+	}
 }
 
 func (r replies) WithREP(rep REP) replies {
@@ -29,4 +52,14 @@ func (r replies) WithREP(rep REP) replies {
 func (r replies) WithATYP(atyp ATYP) replies {
 	r[3] = atyp
 	return r
+}
+
+func (r replies) WithADDR(netaddr net.Addr) replies {
+	// TODO
+	return r
+}
+
+func (r replies) Wirte(conn io.Writer) error {
+	_, err := conn.Write(r)
+	return err
 }

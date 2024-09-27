@@ -9,15 +9,15 @@ import (
 )
 
 var (
-	RSVError    = errors.New("read rsv error")
-	UnknownCMD  = errors.New("unknown command")
-	UnknownATYP = errors.New("unknown auth method")
+	RSVError      = errors.New("Rsv error must be set to 0x00")
+	UnSupportCMD  = errors.New("Unsupported command")
+	UnSupportATYP = errors.New("Unsupported auth method")
 )
 
 type CMD = byte
 
 const (
-	Connect CMD = 0x01 // 
+	Connect CMD = 0x01 //
 	Bind    CMD = 0x02
 	UdpAss  CMD = 0x03
 )
@@ -65,7 +65,7 @@ func NewClientRequestMessage(conn io.Reader) (*ClientRequestMessage, error) {
 	}
 
 	if !slices.Contains(cmds, cmd) {
-		return nil, UnknownCMD
+		return nil, UnSupportCMD
 	}
 
 	if rsv != RSV {
@@ -73,7 +73,7 @@ func NewClientRequestMessage(conn io.Reader) (*ClientRequestMessage, error) {
 	}
 
 	if !slices.Contains(atyps, atyp) {
-		return nil, UnknownATYP
+		return nil, UnSupportATYP
 	}
 
 	// 读取IP地址

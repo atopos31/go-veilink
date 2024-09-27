@@ -70,7 +70,7 @@ func (s *SOCKS5Server) handleConnection(conn net.Conn) error {
 
 	logrus.Debugf("localaddr: %s", remoteConn.LocalAddr())
 
-	if err := replies.WithREP(REP_SUCCEEDED).WithATYP(req.Atyp).Wirte(conn); err != nil {
+	if err := replies.WithREP(REP_SUCCEEDED).WithATYP(req.Atyp).WithBIND(remoteConn.LocalAddr().(*net.TCPAddr)).Wirte(conn); err != nil {
 		return err
 	}
 

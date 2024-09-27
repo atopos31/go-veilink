@@ -1,6 +1,7 @@
 package socks5
 
 import (
+	"encoding/binary"
 	"io"
 	"net"
 )
@@ -30,7 +31,7 @@ const (
 type replies []byte
 
 func RepliesTODO() replies {
-	return []byte{socks5Version, REP_SUCCEEDED, RSV, IPv4, 0, 0, 0, 0, 0, 0}
+	return []byte{socks5Version, REP_SUCCEEDED, RSV, IPv4}
 }
 
 func (r replies) WithREPByError(err error) replies {
@@ -54,8 +55,12 @@ func (r replies) WithATYP(atyp ATYP) replies {
 	return r
 }
 
-func (r replies) WithADDR(netaddr net.Addr) replies {
-	// TODO
+func (r replies) WithBIND(netaddr *net.TCPAddr) replies {
+	r = append(r, netaddr.IP...)
+	portbuf := make([]byte, 2)
+	binary.BigEndian.PutUint16(portbuf[:2], uint16(netaddr.Port))
+
+	r = append(r, portbuf...)
 	return r
 }
 

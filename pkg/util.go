@@ -3,6 +3,8 @@ package pkg
 import (
 	"io"
 	"sync"
+
+	"github.com/sirupsen/logrus"
 )
 
 // Join two connections together and return the number of bytes transferred
@@ -13,7 +15,11 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser) (inCount int64, outCount
 		defer from.Close()
 		defer wait.Done()
 
-		*count, _ = io.Copy(to, from)
+		var err error
+		*count, err = io.Copy(to, from)
+		if err != nil {
+			logrus.Errorf("Join conns error: %v", err)
+		}
 	}
 
 	wait.Add(2)

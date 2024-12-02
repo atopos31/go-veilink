@@ -44,7 +44,7 @@ func (g *Gateway) Run() error {
 		if err != nil {
 			return err
 		}
-		logrus.Debugf(fmt.Sprintf("accept connection from %s", conn.RemoteAddr()))
+		logrus.Debugf("accept connection from %s", conn.RemoteAddr())
 		go g.handleConn(conn)
 	}
 }

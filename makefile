@@ -1,7 +1,6 @@
 build:
-	@GOOS=$(os) GOARCH=$(arch) go build -o ./bin/veilink_client_$(os)_$(arch)$(suffix) ./cmd/client/client.go
-	@GOOS=$(os) GOARCH=$(arch) go build -o ./bin/veilink_server_$(os)_$(arch)$(suffix) ./cmd/server/server.go
-
+	@CGO_ENABLED=0 GOOS=$(os) GOARCH=$(arch) go build -o ./bin/veilink_client_$(os)_$(arch)$(suffix) ./cmd/client/client.go
+	@CGO_ENABLED=0 GOOS=$(os) GOARCH=$(arch) go build -o ./bin/veilink_server_$(os)_$(arch)$(suffix) ./cmd/server/server.go
 runs:
 	@go run ./cmd/server/server.go -c ./internal/config/server.toml
 

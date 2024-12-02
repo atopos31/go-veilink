@@ -22,6 +22,10 @@ type Chacha20Stream struct {
 }
 
 func NewChacha20Stream(key []byte, conn VeilConn) (*Chacha20Stream, error) {
+	if len(key) != chacha20.KeySize {
+		return nil, errors.New("invalid key length")
+	}
+
 	s := &Chacha20Stream{
 		key:  key, // should be exactly 32 bytes
 		conn: conn,

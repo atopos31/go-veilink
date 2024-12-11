@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VEILINK</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.19/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="h-screen flex items-center justify-center ">
+    <div class="main space-y-4 text-center">
+        <div id="alert-error" role="alert"
+            class="alert alert-error hidden fixed top-0 left-1/2 transform -translate-x-1/2 z-50 ">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Error! Task failed successfully.</span>
+        </div>
+        <h2 class="text-2xl font-bold">VEILINK</h2>
+        <input id="ak-input" type="text" placeholder="请输入 access key" class="input input-bordered w-full max-w-xs" />
+        <button id="enter-btn" class="btn bg-blue-500 text-white hover:bg-blue-600 w-full max-w-xs">进入</button>
+    </div>
+</body>
+<script>
+    const alertSpan = document.querySelector('#alert-error span');
+    const alertError = document.getElementById('alert-error');
+    const input = document.getElementById("ak-input");
+    const enterBtn = document.getElementById("enter-btn");
+    enterBtn.addEventListener("click", () => {
+        const accessKey = document.querySelector("input").value;
+        if (accessKey === "") {
+            Error("不要输入空的access key!");
+            return;
+        }
+        console.log(accessKey);
+        fetch(`/access?ak=${accessKey}`,{ redirect: "follow" })
+            .then(res => res.status === 200 ? window.location.href = "/" : Error("请输入正确的access key!"))
+            .catch(err => Error("请输入正确的access key!"));
+    });
+
+    let lock = false;
+    function Error(msg) {
+        alertError.classList.remove("hidden");
+        input.classList.add("input-error");
+        alertSpan.textContent = msg;
+
+        if (lock) return;
+        lock = true;
+        setTimeout(() => {
+            lock = false;
+            alertError.classList.add("hidden");
+            input.classList.remove("input-error");
+        }, 2000);
+    }
+</script>
+
+</html>

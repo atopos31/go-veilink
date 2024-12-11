@@ -1,11 +1,15 @@
 package main
 
 import (
+	"embed"
 	"flag"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/atopos31/go-veilink/internal/config"
 	"github.com/atopos31/go-veilink/internal/server"
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
@@ -50,7 +54,37 @@ func main() {
 		go gw.DebugInfoTicker(5 * time.Second)
 	}
 
+	go webServer()
+
 	if err := gw.Run(); err != nil {
 		panic(err)
 	}
+}
+
+//go:embed web/*
+var staticFiles embed.FS
+
+func webServer() {
+	r := gin.Default()
+	httpFS := http.FS(staticFiles)
+	r.GET("/login", func(ctx *gin.Context) {
+		ctx.FileFromFS("/web/login.html", httpFS)
+	})
+
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.FileFromFS("/web/in.html", httpFS)
+	})
+
+	r.GET("/access", func(ctx *gin.Context) {
+		accessKey := ctx.Query("ak")
+		testak := "123456"
+		if strings.EqualFold(accessKey, testak) {
+			ctx.SetCookie("ak", testak, 3600, "/", "localhost", false, false)
+			ctx.String(http.StatusOK, "login success")
+		} else {
+			ctx.String(http.StatusUnauthorized, "invalid access key")
+		}
+	})
+
+	r.Run(":9529")
 }

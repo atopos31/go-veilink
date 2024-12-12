@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VEILINK</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.19/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="/static/web/output.css">
+</head>
+
+<body class="p-4">
+    <div class="max-w-5xl mx-auto">
+        <!-- 客户端管理 -->
+        <h2 class="text-4xl font-bold text-center mb-4">VEILINK</h2>
+        <div class="card bg-base-100 shadow-xl mb-4">
+            <div class="card-body">
+                <div class="flex justify-between items-center flex-wrap gap-2">
+                    <h2 class="card-title">客户端管理</h2>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-info" onclick="showClientKey()" id="showKeyBtn" disabled>查看密钥</button>
+                        <button class="btn btn-sm btn-primary" onclick="openClientModal()">添加客户端</button>
+                    </div>
+                </div>
+                <div class="relative w-full">
+                    <select class="select select-bordered w-full mt-4 max-w-full text-ellipsis" id="clientSelect"
+                        onchange="loadTunnels()">
+                        <option value="">选择客户端</option>
+                    </select>
+                    <div id="clientStatus" class="mt-2 hidden">
+                        状态: <span id="statusBadge" class="badge ml-2">离线</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 隧道列表 -->
+        <div class="card bg-base-100 shadow-xl" id="tunnelCard" style="display: none;">
+            <div class="card-body">
+                <div class="flex justify-between items-center">
+                    <h2 class="card-title">隧道列表</h2>
+                    <button class="btn btn-sm btn-primary" onclick="openTunnelModal()" id="addTunnelBtn" disabled>添加隧道</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="table mt-4">
+                        <thead>
+                            <tr>
+                                <th>协议</th>
+                                <th>公网地址</th>
+                                <th>内网地址</th>
+                                <th>加密</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tunnelList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 客户端模态框 -->
+    <dialog id="clientModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg">添加客户端</h3>
+            <div class="form-control mt-4">
+                <label class="label">
+                    <span class="label-text">客户端ID</span>
+                </label>
+                <input type="text" id="clientId" class="input input-bordered" />
+            </div>
+            <div class="modal-action">
+                <button class="btn btn-primary" onclick="saveClient()">保存</button>
+                <button class="btn" onclick="closeClientModal()">取消</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 隧道模态框 -->
+    <dialog id="tunnelModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg">添加隧道</h3>
+            <div class="form-control mt-4">
+                <label class="label">
+                    <span class="label-text">协议</span>
+                </label>
+                <select class="select select-bordered" id="protocol">
+                    <option value="tcp">TCP</option>
+                    <option value="udp">UDP</option>
+                </select>
+
+                <label class="label mt-2">
+                    <span class="label-text">公网地址</span>
+                </label>
+                <div class="join">
+                    <input type="text" id="publicIP" value="0.0.0.0" class="input input-bordered join-item" />
+                    <input type="number" id="publicPort" placeholder="端口" min="1" max="65535" required
+                        class="input input-bordered join-item w-24" />
+                </div>
+
+                <label class="label mt-2">
+                    <span class="label-text">内网地址</span>
+                </label>
+                <div class="join">
+                    <input type="text" id="internalIP" value="127.0.0.1" class="input input-bordered join-item" />
+                    <input type="number" id="internalPort" placeholder="端口" min="1" max="65535" required
+                        class="input input-bordered join-item w-24" />
+                </div>
+
+                <label class="label cursor-pointer mt-2">
+                    <span class="label-text">启用加密</span>
+                    <input type="checkbox" class="toggle" id="encrypt"/>
+                </label>
+            </div>
+            <div class="modal-action">
+                <button class="btn btn-primary" onclick="saveTunnel()">保存</button>
+                <button class="btn" onclick="closeTunnelModal()">取消</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 密钥查看模态框 -->
+    <dialog id="keyModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg">客户端密钥 - <span id="keyModalClientId"></span></h3>
+            <div class="mt-4">
+                <div class="alert">
+                    <span id="clientKey" class="break-all font-mono"></span>
+                </div>
+            </div>
+            <div class="modal-action">
+                <button class="btn" onclick="document.getElementById('keyModal').close()">关闭</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 删除确认模态框 -->
+    <dialog id="deleteModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg">确认删除</h3>
+            <p class="py-4">确定要删除这个隧道吗？此操作无法撤销。</p>
+            <div class="modal-action">
+                <button class="btn btn-error" id="confirmDeleteBtn">删除</button>
+                <button class="btn" onclick="document.getElementById('deleteModal').close()">取消</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 修改操作反馈模态框 -->
+    <dialog id="feedbackModal" class="modal modal-top ">
+        <div class="max-w-sm mx-auto pointer-events-none">
+            <div id="feedbackContent" class="alert shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span id="feedbackMessage">操作成功</span>
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+        // 加载客户端列表
+        function loadClients() {
+            // 模拟数据，实际从API获取
+            const clients = [
+                { id: "client1", online: true },
+                { id: "client2", online: false }
+            ];
+            const select = document.getElementById('clientSelect');
+            select.innerHTML = '<option value="">选择客户端</option>';
+            clients.forEach(client => {
+                select.innerHTML += `<option value="${client.id}">${client.id}</option>`;
+            });
+        }
+
+        // 加载隧道列表
+        function loadTunnels() {
+            const clientId = document.getElementById('clientSelect').value;
+            const tunnelCard = document.getElementById('tunnelCard');
+            const clientStatus = document.getElementById('clientStatus');
+            const statusBadge = document.getElementById('statusBadge');
+            const showKeyBtn = document.getElementById('showKeyBtn');
+            
+            document.getElementById('addTunnelBtn').disabled = !clientId;
+            showKeyBtn.disabled = !clientId;
+
+            if (!clientId) {
+                tunnelCard.style.display = 'none';
+                clientStatus.classList.add('hidden');
+                return;
+            }
+
+            // 显示客户端状态
+            clientStatus.classList.remove('hidden');
+            // 这里应该通过 API 获取实际的客户状态
+            const isOnline = true; // 模拟在线状态
+            statusBadge.className = `badge ${isOnline ? 'badge-success' : 'badge-error'}`;
+            statusBadge.textContent = isOnline ? '在线' : '离线';
+
+            // 显示隧道卡片
+            tunnelCard.style.display = 'block';
+
+            // 加载隧道列表��保持原有代码不变）
+            const tunnels = [
+                {
+                    protocol: "tcp",
+                    public_ip: "0.0.0.0",
+                    public_port: 9093,
+                    internal_ip: "127.0.0.1",
+                    internal_port: 8000,
+                    encrypt: true
+                }
+            ];
+
+            const tunnelList = document.getElementById('tunnelList');
+            tunnelList.innerHTML = '';
+            tunnels.forEach(tunnel => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${tunnel.protocol.toUpperCase()}</td>
+                    <td>${tunnel.public_ip}:${tunnel.public_port}</td>
+                    <td>${tunnel.internal_ip}:${tunnel.internal_port}</td>
+                    <td>
+                        <div class="badge ${tunnel.encrypt ? 'badge-success' : 'badge-error'}">
+                            ${tunnel.encrypt ? '是' : '否'}
+                        </div>
+                    </td>
+                    <td class="flex gap-2 justify-center">
+                        <button class="btn btn-xs btn-primary" onclick="editTunnel('${tunnel.id}')">编辑</button>
+                        <button class="btn btn-xs btn-error" onclick="showDeleteConfirm('${tunnel.id}')">删除</button>
+                    </td>
+                `;
+                tunnelList.appendChild(row);
+            });
+        }
+
+        // 客户端相关操作
+        function openClientModal() {
+            document.getElementById('clientModal').showModal();
+        }
+
+        function closeClientModal() {
+            document.getElementById('clientModal').close();
+            document.getElementById('clientId').value = '';
+        }
+
+        function saveClient() {
+            const clientId = document.getElementById('clientId').value;
+            if (!clientId) {
+                showFeedback(false, '请输入客户端ID');
+                return;
+            }
+            // 这里应调用API保存客户端
+            closeClientModal();
+            loadClients();
+            showFeedback(true, '客户端添加成功');
+        }
+
+        // 隧道相关操作
+        function openTunnelModal() {
+            document.getElementById('tunnelModal').showModal();
+        }
+
+        function closeTunnelModal() {
+            document.getElementById('tunnelModal').close();
+            document.getElementById('protocol').value = 'tcp';
+            document.getElementById('publicIP').value = '0.0.0.0';
+            document.getElementById('publicPort').value = '';
+            document.getElementById('internalIP').value = '127.0.0.1';
+            document.getElementById('internalPort').value = '';
+            document.getElementById('encrypt').checked = false;
+        }
+
+        function saveTunnel() {
+            const clientId = document.getElementById('clientSelect').value;
+            const publicPort = parseInt(document.getElementById('publicPort').value);
+            const internalPort = parseInt(document.getElementById('internalPort').value);
+            
+            const tunnelData = {
+                client_id: clientId,
+                protocol: document.getElementById('protocol').value,
+                public_ip: document.getElementById('publicIP').value,
+                public_port: publicPort,
+                internal_ip: document.getElementById('internalIP').value,
+                internal_port: internalPort,
+                encrypt: document.getElementById('encrypt').checked
+            };
+
+            // 验证必填字段
+            if (!tunnelData.public_ip || !tunnelData.internal_ip) {
+                showFeedback(false, '请填写完整的地址信息');
+                return;
+            }
+
+            // 验证端口号
+            if (!publicPort || publicPort < 1 || publicPort > 65535 ||
+                !internalPort || internalPort < 1 || internalPort > 65535) {
+                showFeedback(false, '请输入有效的端口号(1-65535)');
+                return;
+            }
+
+            // 这里应调用API保存隧道
+            closeTunnelModal();
+            loadTunnels();
+            showFeedback(true, '隧道保存成功');
+        }
+
+        function deleteTunnel(btn) {
+            if (confirm('确定要删除这个隧道吗？')) {
+                // 这里应调用API删除隧道
+                btn.closest('tr').remove();
+            }
+        }
+
+        // 添加查看客户端密钥功能
+        function showClientKey() {
+            const clientId = document.getElementById('clientSelect').value;
+            if (!clientId) return;
+            
+            // 设置模态框标题中的客户端ID
+            document.getElementById('keyModalClientId').textContent = clientId;
+            
+            // 这里应该调用 API 获取实际的客户端密钥
+            const key = "客户端密钥-" + clientId; // 模拟密钥数据
+            document.getElementById('clientKey').textContent = key;
+            document.getElementById('keyModal').showModal();
+        }
+
+        // 添加编辑隧道功能
+        function editTunnel(tunnelId) {
+            // 这里应该调用 API 获取隧道详情
+            const tunnel = {
+                id: tunnelId,
+                protocol: "tcp",
+                public_ip: "0.0.0.0",
+                public_port: 9093,
+                internal_ip: "127.0.0.1",
+                internal_port: 8000,
+                encrypt: true
+            }; // 模拟数据
+
+            // 填写表单
+            document.getElementById('protocol').value = tunnel.protocol;
+            document.getElementById('publicIP').value = tunnel.public_ip;
+            document.getElementById('publicPort').value = tunnel.public_port;
+            document.getElementById('internalIP').value = tunnel.internal_ip;
+            document.getElementById('internalPort').value = tunnel.internal_port;
+            document.getElementById('encrypt').checked = tunnel.encrypt;
+
+            // 打开模态框
+            document.getElementById('tunnelModal').showModal();
+        }
+
+        // 修改删除确认功能
+        let tunnelToDelete = null;
+
+        function showDeleteConfirm(tunnelId) {
+            tunnelToDelete = tunnelId;
+            document.getElementById('deleteModal').showModal();
+        }
+
+        // 添加删除确认事件监听
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function () {
+            if (tunnelToDelete) {
+                // 这里应该调用 API 删除隧道
+                console.log('删除隧道:', tunnelToDelete);
+                document.getElementById('deleteModal').close();
+                loadTunnels();
+                showFeedback(true, '隧道删除成功');
+                tunnelToDelete = null;
+            }
+        });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function () {
+            loadClients();
+        });
+
+        // 修改 showFeedback 函数
+        function showFeedback(success, message) {
+            const feedbackContent = document.getElementById('feedbackContent');
+            const feedbackModal = document.getElementById('feedbackModal');
+            
+            // 设置样式
+            if (success) {
+                feedbackContent.className = 'alert alert-success shadow-lg';
+                feedbackContent.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>${message || '操作成功'}</span>
+                `;
+            } else {
+                feedbackContent.className = 'alert alert-error shadow-lg';
+                feedbackContent.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>${message || '操作失败'}</span>
+                `;
+            }
+            
+            // 显示反馈
+            feedbackModal.classList.add('modal-open');
+            
+            // 2秒后自动关闭
+            setTimeout(() => {
+                feedbackModal.classList.remove('modal-open');
+            }, 1500);
+        }
+    </script>
+</body>
+
+</html>

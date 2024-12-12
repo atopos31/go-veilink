@@ -61,30 +61,38 @@ func main() {
 	}
 }
 
-//go:embed web/*
-var staticFiles embed.FS
+//go:embed web/*.html
+var htmlFiles embed.FS
+
+//go:embed web/*.css web/*.ico
+var cssFiles embed.FS
 
 func webServer() {
 	r := gin.Default()
-	httpFS := http.FS(staticFiles)
+	httpFS := http.FS(htmlFiles)
+	cssFS := http.FS(cssFiles)
 	r.GET("/login", func(ctx *gin.Context) {
 		ctx.FileFromFS("/web/login.html", httpFS)
 	})
 
 	r.GET("/", func(ctx *gin.Context) {
-		ctx.FileFromFS("/web/in.html", httpFS)
+		ctx.FileFromFS("/web/home.html", httpFS)
 	})
 
-	r.GET("/access", func(ctx *gin.Context) {
-		accessKey := ctx.Query("ak")
-		testak := "123456"
-		if strings.EqualFold(accessKey, testak) {
-			ctx.SetCookie("ak", testak, 3600, "/", "localhost", false, false)
-			ctx.String(http.StatusOK, "login success")
-		} else {
-			ctx.String(http.StatusUnauthorized, "invalid access key")
-		}
-	})
+	r.StaticFS("/static", cssFS)
+
+	r.GET("/access", access)
 
 	r.Run(":9529")
+}
+
+func access(ctx *gin.Context) {
+	accessKey := ctx.Query("ak")
+	testak := "123456"
+	if strings.EqualFold(accessKey, testak) {
+		ctx.SetCookie("ak", testak, 3600, "/", "localhost", false, false)
+		ctx.String(http.StatusOK, "login success")
+	} else {
+		ctx.String(http.StatusUnauthorized, "invalid access key")
+	}
 }

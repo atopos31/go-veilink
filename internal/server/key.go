@@ -1,10 +1,8 @@
 package server
 
 import (
+	"errors"
 	"sync"
-
-	"github.com/atopos31/go-veilink/pkg"
-	"github.com/sirupsen/logrus"
 )
 
 type keymap struct {
@@ -19,23 +17,16 @@ func NewKeyMap() *keymap {
 
 func (k *keymap) Get(clientID string) ([]byte, error) {
 	var key []byte
-	var err error
 	value, ok := k.Kmap.Load(clientID)
 	if !ok {
-		key, err = pkg.GenChacha20Key()
-		if err != nil {
-			return nil, err
-		}
-		k.Kmap.Store(clientID, key)
-		strKey := pkg.KeyByteToString(key)
-		if err := pkg.WriteKeyToFile(pkg.DefaultKeyPath, clientID, strKey); err != nil {
-			logrus.Debugf("write %s key to file failed: %s, err:%s", clientID, pkg.DefaultKeyPath, err.Error())
-		}
-		logrus.Debugf("write %s key to file success: %s/%s.key", clientID, pkg.DefaultKeyPath, clientID)
-		logrus.Debugf("%s key: %s", clientID, pkg.KeyByteToString(key))
+		return nil, errors.New("key not found")
 	} else {
 		key = value.([]byte)
 	}
 
 	return key, nil
+}
+
+func (k *keymap) Set(clientID string, key []byte) {
+	k.Kmap.Store(clientID, key)
 }

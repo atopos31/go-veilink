@@ -29,15 +29,7 @@ type Listener struct {
 	ioData         *IOdata
 }
 
-func NewListener(listenerConfig *config.Listener, keymap *keymap, sessionMgr *SessionManager, udpSessionMgr *UDPSessionManage) *Listener {
-	var key []byte
-	var err error
-	if listenerConfig.Encrypt {
-		key, err = keymap.Get(listenerConfig.ClientID)
-		if err != nil {
-			panic(err)
-		}
-	}
+func NewListener(listenerConfig *config.Listener, key []byte, sessionMgr *SessionManager, udpSessionMgr *UDPSessionManage) *Listener {
 	return &Listener{
 		Encrypt:        listenerConfig.Encrypt,
 		Key:            key,
@@ -66,17 +58,19 @@ func (l *Listener) listenerAndServerTCP() error {
 	if err != nil {
 		return err
 	}
-	defer tcpListener.Close()
-
 	l.listener = tcpListener
 
-	for {
-		conn, err := tcpListener.Accept()
-		if err != nil {
-			return err
+	go func() {
+		defer tcpListener.Close()
+		for {
+			conn, err := tcpListener.Accept()
+			if err != nil {
+				return
+			}
+			go l.handleConn(conn)
 		}
-		go l.handleConn(conn)
-	}
+	}()
+	return nil
 }
 
 func (l *Listener) handleConn(conn net.Conn) {
@@ -117,62 +111,66 @@ func (l *Listener) listenerAndServerUDP() error {
 	if err != nil {
 		return err
 	}
-	defer udpListener.Close()
+
 	buffer := make([]byte, 1024*64)
-	for {
-		n, remoteAddr, err := udpListener.ReadFrom(buffer)
-		if err != nil {
-			break
-		}
-		udpSess, err := l.udpSessionMgr.Get(remoteAddr.String())
-		if err != nil {
-			// 查询session
-			tunnelConn, err := l.sessionMgr.GetSessionConnByID(l.listenerConfig.ClientID)
+	go func() {
+		defer udpListener.Close()
+		for {
+			n, remoteAddr, err := udpListener.ReadFrom(buffer)
 			if err != nil {
-				logrus.Warnf("get session fail: %v", err)
-				continue
+				break
 			}
-
-			if err := l.sendEncryptProtocol(tunnelConn); err != nil {
-				logrus.Warnf("send encrypt protocol fail: %v", err)
-				continue
-			}
-
-			if l.Encrypt {
-				tunnelConn, err = pkg.NewChacha20Stream(l.Key, tunnelConn)
+			udpSess, err := l.udpSessionMgr.Get(remoteAddr.String())
+			if err != nil {
+				// 查询session
+				tunnelConn, err := l.sessionMgr.GetSessionConnByID(l.listenerConfig.ClientID)
 				if err != nil {
-					logrus.Warnf("new chacha20 stream fail: %v", err)
+					logrus.Warnf("get session fail: %v", err)
 					continue
 				}
+
+				if err := l.sendEncryptProtocol(tunnelConn); err != nil {
+					logrus.Warnf("send encrypt protocol fail: %v", err)
+					continue
+				}
+
+				if l.Encrypt {
+					tunnelConn, err = pkg.NewChacha20Stream(l.Key, tunnelConn)
+					if err != nil {
+						logrus.Warnf("new chacha20 stream fail: %v", err)
+						continue
+					}
+				}
+
+				if err := l.sendVeilinkProtocol(tunnelConn); err != nil {
+					logrus.Warnf("send encrypt protocol fail: %v", err)
+					continue
+				}
+
+				udpSess = &UDPsession{
+					tunnelConn: tunnelConn,
+					LocalAddr:  addr,
+					RemoteAddr: remoteAddr.String(),
+				}
+				l.udpSessionMgr.Add(remoteAddr.String(), udpSess)
+				go l.udpReadFormClient(tunnelConn, remoteAddr, udpListener)
 			}
 
-			if err := l.sendVeilinkProtocol(tunnelConn); err != nil {
-				logrus.Warnf("send encrypt protocol fail: %v", err)
+			packet := pkg.UDPpacket(buffer[:n])
+			body, err := packet.Encode()
+			if err != nil {
+				logrus.Warnf("encode udp packet fail: %v", err)
 				continue
 			}
-
-			udpSess = &UDPsession{
-				tunnelConn: tunnelConn,
-				LocalAddr:  addr,
-				RemoteAddr: remoteAddr.String(),
+			lenbody, err := udpSess.tunnelConn.Write(body)
+			if err != nil {
+				logrus.Warnf("write udp packet fail: %v", err)
+				continue
 			}
-			l.udpSessionMgr.Add(remoteAddr.String(), udpSess)
-			go l.udpReadFormClient(tunnelConn, remoteAddr, udpListener)
+			l.ioData.AddInput(int64(lenbody))
 		}
+	}()
 
-		packet := pkg.UDPpacket(buffer[:n])
-		body, err := packet.Encode()
-		if err != nil {
-			logrus.Warnf("encode udp packet fail: %v", err)
-			continue
-		}
-		lenbody, err := udpSess.tunnelConn.Write(body)
-		if err != nil {
-			logrus.Warnf("write udp packet fail: %v", err)
-			continue
-		}
-		l.ioData.AddInput(int64(lenbody))
-	}
 	return nil
 }
 

@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"net"
-	"time"
 
 	"github.com/atopos31/go-veilink/internal/config"
 	"github.com/atopos31/go-veilink/pkg"
@@ -12,41 +11,39 @@ import (
 
 type Gateway struct {
 	addr        string
-	clientCount int
-	clientIDs   map[string]struct{}
+	listenerMgr *ListenerMgr
 	sessionMgr  *SessionManager
 }
 
-func NewGateway(conf config.ServerConfig, sessionMgr *SessionManager) *Gateway {
-	clientIDsMap := make(map[string]struct{})
-	for _, listener := range conf.ListenerConfigs {
-		clientIDsMap[listener.ClientID] = struct{}{}
-	}
-	addr := fmt.Sprintf("%s:%d", conf.Gateway.Ip, conf.Gateway.Port)
+func NewGateway(conf config.Gateway, listenerMgr *ListenerMgr, sessionMgr *SessionManager) *Gateway {
+	addr := fmt.Sprintf("%s:%d", conf.Ip, conf.Port)
 	return &Gateway{
 		addr:        addr,
-		clientCount: len(clientIDsMap),
-		clientIDs:   clientIDsMap,
+		listenerMgr: listenerMgr,
 		sessionMgr:  sessionMgr,
 	}
 }
 
 func (g *Gateway) Run() error {
-	gateWayListener, errr := net.Listen("tcp", g.addr)
-	if errr != nil {
-		return errr
+	gateWayListener, err := net.Listen("tcp", g.addr)
+	if err != nil {
+		return err
 	}
-	defer gateWayListener.Close()
-	logrus.Debugf("Gateway is running on %s", g.addr)
 
-	for {
-		conn, err := gateWayListener.Accept()
-		if err != nil {
-			return err
+	logrus.Debugf("Gateway is running on %s", g.addr)
+	go func() {
+		defer gateWayListener.Close()
+		for {
+			conn, err := gateWayListener.Accept()
+			if err != nil {
+				logrus.Errorf("failed to accept connection %v", err)
+				continue
+			}
+			logrus.Debugf("accept connection from %s", conn.RemoteAddr())
+			go g.handleConn(conn)
 		}
-		logrus.Debugf("accept connection from %s", conn.RemoteAddr())
-		go g.handleConn(conn)
-	}
+	}()
+	return nil
 }
 
 func (g *Gateway) handleConn(conn net.Conn) {
@@ -56,7 +53,8 @@ func (g *Gateway) handleConn(conn net.Conn) {
 		conn.Close()
 		return
 	}
-	if _, ok := g.clientIDs[handshakeReq.ClientID]; !ok {
+
+	if !g.listenerMgr.CheckExist(handshakeReq.ClientID) {
 		logrus.Errorf("invalid client id %v", handshakeReq.ClientID)
 		conn.Close()
 		return
@@ -70,16 +68,15 @@ func (g *Gateway) handleConn(conn net.Conn) {
 	}
 }
 
-func (gw *Gateway) DebugInfoTicker(d time.Duration) {
-	ticker := time.NewTicker(d)
-	defer ticker.Stop()
-	for range ticker.C {
-		gw.sessionMgr.mu.Lock()
-		logrus.Debugf("↓↓ client is online: %d/%d", len(gw.sessionMgr.sessions), gw.clientCount)
-		for k := range gw.sessionMgr.sessions {
-			logrus.Debug(k)
-		}
-		gw.sessionMgr.mu.Unlock()
-	}
-
-}
+// func (gw *Gateway) DebugInfoTicker(d time.Duration) {
+// 	ticker := time.NewTicker(d)
+// 	defer ticker.Stop()
+// 	for range ticker.C {
+// 		gw.sessionMgr.mu.Lock()
+// 		logrus.Debugf("↓↓ client is online: %d/%d", len(gw.sessionMgr.sessions), gw.clientCount)
+// 		for k := range gw.sessionMgr.sessions {
+// 			logrus.Debug(k)
+// 		}
+// 		gw.sessionMgr.mu.Unlock()
+// 	}
+// }

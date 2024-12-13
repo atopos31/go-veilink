@@ -22,6 +22,7 @@ type UDPsession struct {
 	tunnelConn pkg.VeilConn
 }
 
+// 管理UDP连接
 type UDPSessionManage struct {
 	sessionMu sync.Mutex
 	sessions  map[string]*UDPsession
@@ -72,13 +73,11 @@ type Session struct {
 
 type SessionManager struct {
 	mu       sync.Mutex
-	count    int
 	sessions map[string]*Session
 }
 
-func NewSessionManager(count int) *SessionManager {
+func NewSessionManager() *SessionManager {
 	return &SessionManager{
-		count:    count,
 		sessions: make(map[string]*Session),
 	}
 }

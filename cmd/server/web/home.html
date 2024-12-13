@@ -7,6 +7,7 @@
     <title>VEILINK</title>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.19/dist/full.min.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="/static/web/output.css">
+    <link rel="icon" href="/static/web/favicon.ico" type="image/x-icon">
 </head>
 
 <body class="p-4">
@@ -16,10 +17,11 @@
         <div class="card bg-base-100 shadow-xl mb-4">
             <div class="card-body">
                 <div class="flex justify-between items-center flex-wrap gap-2">
-                    <h2 class="card-title">客户端管理</h2>
+                    <h2 class="card-title">客户端</h2>
                     <div class="flex gap-2">
-                        <button class="btn btn-sm btn-info" onclick="showClientKey()" id="showKeyBtn" disabled>查看密钥</button>
-                        <button class="btn btn-sm btn-primary" onclick="openClientModal()">添加客户端</button>
+                        <button class="btn btn-xs btn-info" onclick="showClientKey()" id="showKeyBtn" disabled>查看密钥</button>
+                        <button class="btn btn-xs btn-error" onclick="showDeleteClientConfirm()" id="deleteClientBtn" disabled>删除</button>
+                        <button class="btn btn-xs btn-primary" onclick="openClientModal()">添加</button>
                     </div>
                 </div>
                 <div class="relative w-full">
@@ -156,6 +158,18 @@
         </div>
     </dialog>
 
+    <!-- 添加删除客户端确认模态框 -->
+    <dialog id="deleteClientModal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg">确认删除客户端</h3>
+            <p class="py-4">确定要删除这个客户端吗？此操作将同时删除该客户端的所有隧道，且无法撤销。</p>
+            <div class="modal-action">
+                <button class="btn btn-error" onclick="deleteClient()">删除</button>
+                <button class="btn" onclick="document.getElementById('deleteClientModal').close()">取消</button>
+            </div>
+        </div>
+    </dialog>
+
     <script>
         // 加载客户端列表
         function loadClients() {
@@ -178,9 +192,11 @@
             const clientStatus = document.getElementById('clientStatus');
             const statusBadge = document.getElementById('statusBadge');
             const showKeyBtn = document.getElementById('showKeyBtn');
+            const deleteClientBtn = document.getElementById('deleteClientBtn');
             
             document.getElementById('addTunnelBtn').disabled = !clientId;
             showKeyBtn.disabled = !clientId;
+            deleteClientBtn.disabled = !clientId;
 
             if (!clientId) {
                 tunnelCard.style.display = 'none';
@@ -198,7 +214,7 @@
             // 显示隧道卡片
             tunnelCard.style.display = 'block';
 
-            // 加载隧道列表��保持原有代码不变）
+            // 加载隧道列表（保持原有代码不变）
             const tunnels = [
                 {
                     protocol: "tcp",
@@ -401,6 +417,23 @@
             setTimeout(() => {
                 feedbackModal.classList.remove('modal-open');
             }, 1500);
+        }
+
+        // 添加删除客户端相关函数
+        function showDeleteClientConfirm() {
+            document.getElementById('deleteClientModal').showModal();
+        }
+
+        function deleteClient() {
+            const clientId = document.getElementById('clientSelect').value;
+            if (!clientId) return;
+
+            // 这里应该调用 API 删除客户端
+            document.getElementById('deleteClientModal').close();
+            document.getElementById('clientSelect').value = '';
+            loadClients();
+            loadTunnels();
+            showFeedback(true, '客户端删除成功');
         }
     </script>
 </body>

@@ -384,13 +384,16 @@
                     return response.text().then(text => Promise.reject(text));
                 }
                 closeTunnelModal();
+                loadTunnels();
                 showFeedback(true, method === 'PUT' ? '隧道更新成功' : '隧道添加成功');
+
             })
             .catch(error => {
                 console.error(method === 'PUT' ? '更新隧道失败:' : '添加隧道失败:', error);
+                loadTunnels();
                 showFeedback(false, error || (method === 'PUT' ? '更新隧道失败' : '添加隧道失败'));
             });
-            loadTunnels();
+
         }
 
         function deleteTunnel(btn) {

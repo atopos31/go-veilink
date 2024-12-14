@@ -22,6 +22,8 @@ type App struct {
 }
 
 func (a *App) GetClientTunnel(clientID string, tunnelID string) (*config.Listener, error) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 	for _, client := range a.config.Clients {
 		if client.ClientID == clientID {
 			for _, tunnel := range client.Listeners {
@@ -104,9 +106,22 @@ func (a *App) GetKey(clientID string) (string, error) {
 }
 
 func (a *App) GetClient(clientID string) (*config.Client, error) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 	for _, client := range a.config.Clients {
 		if client.ClientID == clientID {
 			return client, nil
+		}
+	}
+	return nil, fmt.Errorf("client: %s not found", clientID)
+}
+
+func (a *App) GetClientTunnels(clientID string) ([]*config.Listener, error) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	for _, client := range a.config.Clients {
+		if client.ClientID == clientID {
+			return client.Listeners, nil
 		}
 	}
 	return nil, fmt.Errorf("client: %s not found", clientID)

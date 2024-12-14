@@ -81,13 +81,11 @@ func (s *ServerHandler) GetClientKey(ctx *gin.Context) {
 
 func (s *ServerHandler) GetClientTunnels(ctx *gin.Context) {
 	clientID := ctx.Param("clientID")
-	for _, client := range s.app.Config().Clients {
-		if client.ClientID == clientID {
-			ctx.JSON(http.StatusOK, client.Listeners)
-			return
-		}
+	tunnels, err := s.app.GetClientTunnels(clientID)
+	if err != nil {
+		ctx.String(http.StatusInternalServerError, err.Error())
 	}
-	ctx.String(http.StatusNotFound, "client not found")
+	ctx.JSON(http.StatusOK, tunnels)
 }
 
 func (s *ServerHandler) GetClientOnline(ctx *gin.Context) {

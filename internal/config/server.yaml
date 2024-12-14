@@ -11,20 +11,20 @@ clients:
     - client_id: test
       listeners:
         - client_id: test
-          encrypt: true
-          debug_info: false
-          public_protocol: tcp
-          public_ip: 0.0.0.0
-          public_port: 9092
-          internal_ip: 127.0.0.1
-          internal_port: 8080
-        - client_id: test
           encrypt: false
           debug_info: false
-          public_protocol: tcp
+          public_protocol: udp
           public_ip: 0.0.0.0
           public_port: 645
           internal_ip: 127.0.0.1
           internal_port: 33
+        - client_id: test
+          encrypt: false
+          debug_info: false
+          public_protocol: udp
+          public_ip: 0.0.0.0
+          public_port: 9092
+          internal_ip: 127.0.0.1
+          internal_port: 22
     - client_id: dawda
       listeners: []

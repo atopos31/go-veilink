@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/atopos31/go-veilink/internal/common"
 	"github.com/atopos31/go-veilink/internal/config"
 	"github.com/atopos31/go-veilink/pkg"
 	"github.com/sirupsen/logrus"
@@ -25,7 +26,7 @@ type Listener struct {
 	sessionMgr     *SessionManager
 	closeOnce      sync.Once
 	close          chan struct{}
-	listener       net.Listener
+	listener       common.ConnWithClose
 	udpSessionMgr  *UDPSessionManage
 	ioData         *IOdata
 }
@@ -115,6 +116,7 @@ func (l *Listener) listenerAndServerUDP() error {
 	}
 
 	buffer := make([]byte, 1024*64)
+	l.listener = udpListener
 	go func() {
 		defer udpListener.Close()
 		for {

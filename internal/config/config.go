@@ -6,47 +6,48 @@ import (
 )
 
 type ClientConfig struct {
-	ServerIp   string `mapstructure:"server_ip"`
-	ServerPort int    `mapstructure:"server_port"`
-	ClientID   string `mapstructure:"client_id"`
-	LogLevel   string `mapstructure:"level"`
-	Encrypt    bool   `mapstructure:"encrypt"`
-	Key        string `mapstructure:"tcp_key"`
+	ServerIp   string `mapstructure:"server_ip" yaml:"server_ip"`
+	ServerPort int    `mapstructure:"server_port" yaml:"server_port"`
+	ClientID   string `mapstructure:"client_id" yaml:"client_id"`
+	LogLevel   string `mapstructure:"level" yaml:"level"`
+	Encrypt    bool   `mapstructure:"encrypt" yaml:"encrypt"`
+	Key        string `mapstructure:"tcp_key" yaml:"tcp_key"`
 }
 
 type ServerConfig struct {
-	LogLevel string   `mapstructure:"level"`
-	WebUI    WebUI    `mapstructure:"webui"`
-	Gateway  Gateway  `mapstructure:"gateway"`
-	Clients  []Client `mapstructure:"clients"`
+	LogLevel string    `mapstructure:"level" yaml:"level"`
+	WebUI    WebUI     `mapstructure:"webui" yaml:"webui"`
+	Gateway  Gateway   `mapstructure:"gateway" yaml:"gateway"`
+	Clients  []*Client `mapstructure:"clients" yaml:"clients"`
 }
 
 type WebUI struct {
-	AccessKey string `mapstructure:"access_key"`
-	Port      int    `mapstructure:"port"`
-	IP        string `mapstructure:"ip"`
+	AccessKey string `mapstructure:"access_key" yaml:"access_key"`
+	Port      int    `mapstructure:"port" yaml:"port"`
+	IP        string `mapstructure:"ip" yaml:"ip"`
 }
 
 type Gateway struct {
-	Ip        string `mapstructure:"ip"`
-	Port      int    `mapstructure:"port"`
-	DebugInfo bool   `mapstructure:"debug_info"`
+	Ip        string `mapstructure:"ip" yaml:"ip"`
+	Port      int    `mapstructure:"port" yaml:"port"`
+	DebugInfo bool   `mapstructure:"debug_info" yaml:"debug_info"`
 }
 
 type Client struct {
-	ClientID  string     `mapstructure:"client_id"`
-	Listeners []Listener `mapstructure:"listeners"`
+	ClientID  string      `mapstructure:"client_id" yaml:"client_id" json:"client_id"`
+	Listeners []*Listener `mapstructure:"listeners" yaml:"listeners" json:"listeners"`
 }
 
 type Listener struct {
-	ClientID       string `mapstructure:"client_id"`
-	Encrypt        bool   `mapstructure:"encrypt"`
-	DebugInfo      bool   `mapstructure:"debug_info"`
-	PublicProtocol string `mapstructure:"public_protocol"`
-	PublicIP       string `mapstructure:"public_ip"`
-	PublicPort     uint16 `mapstructure:"public_port"`
-	InternalIP     string `mapstructure:"internal_ip"`
-	InternalPort   uint16 `mapstructure:"internal_port"`
+	Uuid           string `yaml:"-" json:"uuid"` // only use for webui
+	ClientID       string `mapstructure:"client_id" yaml:"client_id" json:"client_id"`
+	Encrypt        bool   `mapstructure:"encrypt" yaml:"encrypt" json:"encrypt"`
+	DebugInfo      bool   `mapstructure:"debug_info" yaml:"debug_info" json:"debug_info"`
+	PublicProtocol string `mapstructure:"public_protocol" yaml:"public_protocol" json:"public_protocol"`
+	PublicIP       string `mapstructure:"public_ip" yaml:"public_ip" json:"public_ip"`
+	PublicPort     uint16 `mapstructure:"public_port" yaml:"public_port" json:"public_port"`
+	InternalIP     string `mapstructure:"internal_ip" yaml:"internal_ip" json:"internal_ip"`
+	InternalPort   uint16 `mapstructure:"internal_port" yaml:"internal_port" json:"internal_port"`
 }
 
 func NewServerConfig(configPath string) *ServerConfig {

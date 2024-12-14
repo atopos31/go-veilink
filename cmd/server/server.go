@@ -1,14 +1,21 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"flag"
+	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/atopos31/go-veilink/internal/handler"
 	"github.com/atopos31/go-veilink/internal/server"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -23,9 +30,32 @@ func main() {
 	if err := app.Start(); err != nil {
 		panic(err)
 	}
-	defer app.SaveConfig()
+
 	handler := handler.NewServerHandler(app)
-	webServer(handler)
+	addr := fmt.Sprintf("%s:%d", app.Config().WebUI.IP, app.Config().WebUI.Port)
+	r := webServer(handler)
+
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: r,
+	}
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			panic(err)
+		}
+	}()
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	logrus.Info("shutting down web server")
+	if err := app.SaveConfig(); err != nil {
+		logrus.Errorf("failed to save config %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		logrus.Errorf("failed to shutdown web server %v", err)
+	}
 }
 
 //go:embed web/*.html
@@ -34,7 +64,7 @@ var htmlFiles embed.FS
 //go:embed web/*.css web/*.ico
 var staticFiles embed.FS
 
-func webServer(handler *handler.ServerHandler) {
+func webServer(handler *handler.ServerHandler) http.Handler {
 	r := gin.Default()
 	httpFS := http.FS(htmlFiles)
 	staticFS := http.FS(staticFiles)
@@ -51,5 +81,15 @@ func webServer(handler *handler.ServerHandler) {
 	api := r.Group("/api")
 	api.GET("/access", handler.Access)
 
-	r.Run(":9529")
+	clients := api.Group("/clients", handler.Auth)
+	clients.GET("/", handler.GetClients)
+	clients.POST("/:clientID", handler.AddClient)
+	clients.GET("/:clientID/online", handler.GetClientOnline)
+	clients.DELETE("/:clientID", handler.RemoveClient)
+	clients.GET("/:clientID/key", handler.GetClientKey)
+	clients.GET("/:clientID/tunnels", handler.GetClientTunnels)
+	clients.POST("/:clientID/tunnels", handler.AddClientTunnel)
+	clients.DELETE("/:clientID/tunnels/:tunnelID", handler.RemoveClientTunnel)
+	clients.PUT("/:clientID/tunnels/:tunnelID", handler.UpdateClientTunnel)
+	return r
 }

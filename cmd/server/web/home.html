@@ -173,24 +173,50 @@
     <script>
         // 加载客户端列表
         function loadClients() {
-            // 模拟数据，实际从API获取
-            const clients = [
-                { id: "client1", online: true },
-                { id: "client2", online: false }
-            ];
-            const select = document.getElementById('clientSelect');
-            select.innerHTML = '<option value="">选择客户端</option>';
-            clients.forEach(client => {
-                select.innerHTML += `<option value="${client.id}">${client.id}</option>`;
-            });
+            fetch('/api/clients/')
+                .then(response => response.json())
+                .then(clients => {
+                    const select = document.getElementById('clientSelect');
+                    select.innerHTML = '<option value="">选择客户端</option>';
+                    clients.forEach(client => {
+                        select.innerHTML += `<option value="${client}">${client}</option>`;
+                    });
+                })
+                .catch(error => {
+                    console.error('加载客户端失败:', error);
+                    showFeedback(false, '加载客户端失败');
+                });
         }
 
-        // 加载隧道列表
+        // 添加轮询状态的函数
+        function pollClientStatus() {
+            const clientId = document.getElementById('clientSelect').value;
+            if (!clientId) return;
+
+            const statusBadge = document.getElementById('statusBadge');
+            fetch(`/api/clients/${clientId}/online`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => Promise.reject(text));
+                    }
+                    return response.json();
+                })
+                .then(online => {
+                    statusBadge.className = `badge ${online ? 'badge-success' : 'badge-error'}`;
+                    statusBadge.textContent = online ? '在线' : '离线';
+                })
+                .catch(error => {
+                    console.error('获取客户端状态失败:', error);
+                    statusBadge.className = 'badge badge-error';
+                    statusBadge.textContent = '未知';
+                });
+        }
+
+        // 修改 loadTunnels 函数，移除原有的状态检查代码
         function loadTunnels() {
             const clientId = document.getElementById('clientSelect').value;
             const tunnelCard = document.getElementById('tunnelCard');
             const clientStatus = document.getElementById('clientStatus');
-            const statusBadge = document.getElementById('statusBadge');
             const showKeyBtn = document.getElementById('showKeyBtn');
             const deleteClientBtn = document.getElementById('deleteClientBtn');
             
@@ -206,46 +232,45 @@
 
             // 显示客户端状态
             clientStatus.classList.remove('hidden');
-            // 这里应该通过 API 获取实际的客户状态
-            const isOnline = true; // 模拟在线状态
-            statusBadge.className = `badge ${isOnline ? 'badge-success' : 'badge-error'}`;
-            statusBadge.textContent = isOnline ? '在线' : '离线';
+            pollClientStatus(); // 立即获取一次状态
 
             // 显示隧道卡片
             tunnelCard.style.display = 'block';
 
-            // 加载隧道列表（保持原有代码不变）
-            const tunnels = [
-                {
-                    protocol: "tcp",
-                    public_ip: "0.0.0.0",
-                    public_port: 9093,
-                    internal_ip: "127.0.0.1",
-                    internal_port: 8000,
-                    encrypt: true
-                }
-            ];
-
-            const tunnelList = document.getElementById('tunnelList');
-            tunnelList.innerHTML = '';
-            tunnels.forEach(tunnel => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${tunnel.protocol.toUpperCase()}</td>
-                    <td>${tunnel.public_ip}:${tunnel.public_port}</td>
-                    <td>${tunnel.internal_ip}:${tunnel.internal_port}</td>
-                    <td>
-                        <div class="badge ${tunnel.encrypt ? 'badge-success' : 'badge-error'}">
-                            ${tunnel.encrypt ? '是' : '否'}
-                        </div>
-                    </td>
-                    <td class="flex gap-2 justify-center">
-                        <button class="btn btn-xs btn-primary" onclick="editTunnel('${tunnel.id}')">编辑</button>
-                        <button class="btn btn-xs btn-error" onclick="showDeleteConfirm('${tunnel.id}')">删除</button>
-                    </td>
-                `;
-                tunnelList.appendChild(row);
-            });
+            // 从专门的隧道 API 获取隧道列表
+            fetch(`/api/clients/${clientId}/tunnels`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => Promise.reject(text));
+                    }
+                    return response.json();
+                })
+                .then(tunnels => {
+                    const tunnelList = document.getElementById('tunnelList');
+                    tunnelList.innerHTML = '';
+                    tunnels.forEach(tunnel => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${tunnel.public_protocol.toUpperCase()}</td>
+                            <td>${tunnel.public_ip}:${tunnel.public_port}</td>
+                            <td>${tunnel.internal_ip}:${tunnel.internal_port}</td>
+                            <td>
+                                <div class="badge ${tunnel.encrypt ? 'badge-success' : 'badge-error'}">
+                                    ${tunnel.encrypt ? '是' : '否'}
+                                </div>
+                            </td>
+                            <td class="flex gap-2 justify-center">
+                                <button class="btn btn-xs btn-primary" onclick="editTunnel('${tunnel.uuid}')">编辑</button>
+                                <button class="btn btn-xs btn-error" onclick="showDeleteConfirm('${tunnel.uuid}')">删除</button>
+                            </td>
+                        `;
+                        tunnelList.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('加载隧道列表失败:', error);
+                    showFeedback(false, error || '加载隧道列表失败');
+                });
         }
 
         // 客户端相关操作
@@ -264,14 +289,42 @@
                 showFeedback(false, '请输入客户端ID');
                 return;
             }
-            // 这里应调用API保存客户端
-            closeClientModal();
-            loadClients();
-            showFeedback(true, '客户端添加成功');
+
+            fetch(`/api/clients/${clientId}`, {
+                method: 'POST',
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => Promise.reject(text));
+                }
+                closeClientModal();
+                // 先加载客户端列表
+                return fetch('/api/clients/')
+                    .then(response => response.json())
+                    .then(clients => {
+                        const select = document.getElementById('clientSelect');
+                        select.innerHTML = '<option value="">选择客户端</option>';
+                        clients.forEach(client => {
+                            select.innerHTML += `<option value="${client}">${client}</option>`;
+                        });
+                        // 选择新添加的客户端
+                        select.value = clientId;
+                        // 触发 change 事件以加载隧道列表
+                        select.dispatchEvent(new Event('change'));
+                        showFeedback(true, '客户端添加成功');
+                    });
+            })
+            .catch(error => {
+                console.error('添加客户端失败:', error);
+                showFeedback(false, error || '添加客户端失败');
+            });
         }
 
         // 隧道相关操作
+        let editingTunnelId = null;
+
         function openTunnelModal() {
+            editingTunnelId = null;
             document.getElementById('tunnelModal').showModal();
         }
 
@@ -283,6 +336,7 @@
             document.getElementById('internalIP').value = '127.0.0.1';
             document.getElementById('internalPort').value = '';
             document.getElementById('encrypt').checked = false;
+            editingTunnelId = null;
         }
 
         function saveTunnel() {
@@ -292,7 +346,7 @@
             
             const tunnelData = {
                 client_id: clientId,
-                protocol: document.getElementById('protocol').value,
+                public_protocol: document.getElementById('protocol').value,
                 public_ip: document.getElementById('publicIP').value,
                 public_port: publicPort,
                 internal_ip: document.getElementById('internalIP').value,
@@ -312,11 +366,31 @@
                 showFeedback(false, '请输入有效的端口号(1-65535)');
                 return;
             }
+            console.log(editingTunnelId);
+            const method = editingTunnelId ? 'PUT' : 'POST';
+            const url = editingTunnelId 
+                ? `/api/clients/${clientId}/tunnels/${editingTunnelId}`
+                : `/api/clients/${clientId}/tunnels`;
 
-            // 这里应调用API保存隧道
-            closeTunnelModal();
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(tunnelData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => Promise.reject(text));
+                }
+                closeTunnelModal();
+                showFeedback(true, method === 'PUT' ? '隧道更新成功' : '隧道添加成功');
+            })
+            .catch(error => {
+                console.error(method === 'PUT' ? '更新隧道失败:' : '添加隧道失败:', error);
+                showFeedback(false, error || (method === 'PUT' ? '更新隧道失败' : '添加隧道失败'));
+            });
             loadTunnels();
-            showFeedback(true, '隧道保存成功');
         }
 
         function deleteTunnel(btn) {
@@ -331,63 +405,98 @@
             const clientId = document.getElementById('clientSelect').value;
             if (!clientId) return;
             
-            // 设置模态框标题中的客户端ID
-            document.getElementById('keyModalClientId').textContent = clientId;
-            
-            // 这里应该调用 API 获取实际的客户端密钥
-            const key = "客户端密钥-" + clientId; // 模拟密钥数据
-            document.getElementById('clientKey').textContent = key;
-            document.getElementById('keyModal').showModal();
-        }
-
-        // 添加编辑隧道功能
-        function editTunnel(tunnelId) {
-            // 这里应该调用 API 获取隧道详情
-            const tunnel = {
-                id: tunnelId,
-                protocol: "tcp",
-                public_ip: "0.0.0.0",
-                public_port: 9093,
-                internal_ip: "127.0.0.1",
-                internal_port: 8000,
-                encrypt: true
-            }; // 模拟数据
-
-            // 填写表单
-            document.getElementById('protocol').value = tunnel.protocol;
-            document.getElementById('publicIP').value = tunnel.public_ip;
-            document.getElementById('publicPort').value = tunnel.public_port;
-            document.getElementById('internalIP').value = tunnel.internal_ip;
-            document.getElementById('internalPort').value = tunnel.internal_port;
-            document.getElementById('encrypt').checked = tunnel.encrypt;
-
-            // 打开模态框
-            document.getElementById('tunnelModal').showModal();
+            fetch(`/api/clients/${clientId}/key`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => Promise.reject(text));
+                    }
+                    return response.text();
+                })
+                .then(key => {
+                    document.getElementById('keyModalClientId').textContent = clientId;
+                    document.getElementById('clientKey').textContent = key;
+                    document.getElementById('keyModal').showModal();
+                })
+                .catch(error => {
+                    console.error('获取密钥失败:', error);
+                    showFeedback(false, error || '获取密钥失败');
+                });
         }
 
         // 修改删除确认功能
         let tunnelToDelete = null;
+        let clientToDelete = null;
 
         function showDeleteConfirm(tunnelId) {
             tunnelToDelete = tunnelId;
+            clientToDelete = document.getElementById('clientSelect').value;
             document.getElementById('deleteModal').showModal();
         }
 
-        // 添加删除确认事件监听
+        // 修改删除确认事件监听
         document.getElementById('confirmDeleteBtn').addEventListener('click', function () {
-            if (tunnelToDelete) {
-                // 这里应该调用 API 删除隧道
-                console.log('删除隧道:', tunnelToDelete);
-                document.getElementById('deleteModal').close();
-                loadTunnels();
-                showFeedback(true, '隧道删除成功');
+            if (tunnelToDelete && clientToDelete) {
+                fetch(`/api/clients/${clientToDelete}/tunnels/${tunnelToDelete}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => Promise.reject(text));
+                    }
+                    document.getElementById('deleteModal').close();
+                    loadTunnels();
+                    showFeedback(true, '隧道删除成功');
+                })
+                .catch(error => {
+                    console.error('删除隧道失败:', error);
+                    showFeedback(false, error || '删除隧道失败');
+                });
                 tunnelToDelete = null;
+                clientToDelete = null;
             }
         });
+
+        // 修改编辑隧道功能
+        function editTunnel(tunnelId) {
+            const clientId = document.getElementById('clientSelect').value;
+            fetch(`/api/clients/${clientId}/tunnels`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => Promise.reject(text));
+                    }
+                    return response.json();
+                })
+                .then(tunnels => {
+                    const tunnel = tunnels.find(t => t.uuid === tunnelId);
+                    if (!tunnel) {
+                        throw new Error('隧道不存在');
+                    }
+
+                    // 设置编辑状态
+                    editingTunnelId = tunnelId;
+
+                    // 填写表单
+                    document.getElementById('protocol').value = tunnel.public_protocol;
+                    document.getElementById('publicIP').value = tunnel.public_ip;
+                    document.getElementById('publicPort').value = tunnel.public_port;
+                    document.getElementById('internalIP').value = tunnel.internal_ip;
+                    document.getElementById('internalPort').value = tunnel.internal_port;
+                    document.getElementById('encrypt').checked = tunnel.encrypt;
+
+                    // 打开模态框
+                    document.getElementById('tunnelModal').showModal();
+                })
+                .catch(error => {
+                    console.error('获取隧道信息失败:', error);
+                    showFeedback(false, error || '获取隧道信息失败');
+                });
+        }
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function () {
             loadClients();
+            // 每 5 秒轮询一次状态
+            setInterval(pollClientStatus, 2000);
         });
 
         // 修改 showFeedback 函数
@@ -428,12 +537,23 @@
             const clientId = document.getElementById('clientSelect').value;
             if (!clientId) return;
 
-            // 这里应该调用 API 删除客户端
-            document.getElementById('deleteClientModal').close();
-            document.getElementById('clientSelect').value = '';
-            loadClients();
-            loadTunnels();
-            showFeedback(true, '客户端删除成功');
+            fetch(`/api/clients/${clientId}`, {
+                method: 'DELETE',
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => Promise.reject(text));
+                }
+                document.getElementById('deleteClientModal').close();
+                document.getElementById('clientSelect').value = '';
+                loadClients();
+                loadTunnels();
+                showFeedback(true, '客户端删除成功');
+            })
+            .catch(error => {
+                console.error('删除客户端失败:', error);
+                showFeedback(false, error || '删除客户端失败');
+            });
         }
     </script>
 </body>

@@ -18,6 +18,7 @@ var (
 )
 
 type Listener struct {
+	Uuid           string
 	listenerConfig *config.Listener
 	Encrypt        bool
 	Key            []byte
@@ -31,6 +32,7 @@ type Listener struct {
 
 func NewListener(listenerConfig *config.Listener, key []byte, sessionMgr *SessionManager, udpSessionMgr *UDPSessionManage) *Listener {
 	return &Listener{
+		Uuid:           listenerConfig.Uuid,
 		Encrypt:        listenerConfig.Encrypt,
 		Key:            key,
 		listenerConfig: listenerConfig,

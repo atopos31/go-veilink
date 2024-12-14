@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"slices"
 	"sync"
 
 	"github.com/atopos31/go-veilink/internal/config"
@@ -26,7 +27,7 @@ func NewListenerMgr(sessionMgr *SessionManager, udpSessionMgr *UDPSessionManage,
 	}
 }
 
-func (lm *ListenerMgr) AddListener(clientID string, listenerConfig config.Listener) error {
+func (lm *ListenerMgr) AddListener(clientID string, listenerConfig *config.Listener) error {
 	lm.lock.Lock()
 	defer lm.lock.Unlock()
 	if _, ok := lm.listenersMap[clientID]; !ok {
@@ -36,7 +37,7 @@ func (lm *ListenerMgr) AddListener(clientID string, listenerConfig config.Listen
 	if err != nil {
 		return err
 	}
-	listener := NewListener(&listenerConfig, key, lm.sessionMgr, lm.udpSessionMgr)
+	listener := NewListener(listenerConfig, key, lm.sessionMgr, lm.udpSessionMgr)
 	if err := listener.ListenAndServe(); err != nil {
 		return err
 	}
@@ -70,6 +71,22 @@ func (lm *ListenerMgr) RemoveClient(clientID string) error {
 		listener.Close()
 	}
 	delete(lm.listenersMap, clientID)
+	return nil
+}
+
+func (lm *ListenerMgr) RemoveListener(clientID string, tunnelID string) error {
+	lm.lock.Lock()
+	defer lm.lock.Unlock()
+	if _, ok := lm.listenersMap[clientID]; !ok {
+		return errors.New("client id not found")
+	}
+	lm.listenersMap[clientID] = slices.DeleteFunc(lm.listenersMap[clientID], func(t *Listener) bool {
+		if t.Uuid == tunnelID {
+			t.Close()
+			return true
+		}
+		return false
+	})
 	return nil
 }
 

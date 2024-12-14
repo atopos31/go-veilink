@@ -68,6 +68,10 @@ func (g *Gateway) handleConn(conn net.Conn) {
 	}
 }
 
+func (g *Gateway) IsOnline(clientID string) bool {
+	return g.sessionMgr.sessions[clientID] != nil
+}
+
 // func (gw *Gateway) DebugInfoTicker(d time.Duration) {
 // 	ticker := time.NewTicker(d)
 // 	defer ticker.Stop()

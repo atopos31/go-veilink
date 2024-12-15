@@ -19,8 +19,10 @@
                 <div class="flex justify-between items-center flex-wrap gap-2">
                     <h2 class="card-title">客户端</h2>
                     <div class="flex gap-2">
-                        <button class="btn btn-xs btn-info" onclick="showClientKey()" id="showKeyBtn" disabled>查看密钥</button>
-                        <button class="btn btn-xs btn-error" onclick="showDeleteClientConfirm()" id="deleteClientBtn" disabled>删除</button>
+                        <button class="btn btn-xs btn-info" onclick="showClientKey()" id="showKeyBtn"
+                            disabled>查看密钥</button>
+                        <button class="btn btn-xs btn-error" onclick="showDeleteClientConfirm()" id="deleteClientBtn"
+                            disabled>删除</button>
                         <button class="btn btn-xs btn-primary" onclick="openClientModal()">添加</button>
                     </div>
                 </div>
@@ -41,7 +43,8 @@
             <div class="card-body">
                 <div class="flex justify-between items-center">
                     <h2 class="card-title">隧道列表</h2>
-                    <button class="btn btn-sm btn-primary" onclick="openTunnelModal()" id="addTunnelBtn" disabled>添加隧道</button>
+                    <button class="btn btn-sm btn-primary" onclick="openTunnelModal()" id="addTunnelBtn"
+                        disabled>添加隧道</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="table mt-4">
@@ -111,7 +114,7 @@
 
                 <label class="label cursor-pointer mt-2">
                     <span class="label-text">启用加密</span>
-                    <input type="checkbox" class="toggle" id="encrypt"/>
+                    <input type="checkbox" class="toggle" id="encrypt" />
                 </label>
             </div>
             <div class="modal-action">
@@ -124,7 +127,10 @@
     <!-- 密钥查看模态框 -->
     <dialog id="keyModal" class="modal">
         <div class="modal-box">
-            <h3 class="font-bold text-lg">客户端密钥 - <span id="keyModalClientId"></span></h3>
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-lg">客户端密钥 - <span id="keyModalClientId"></span></h3>
+                <button class="btn btn-sm btn-primary" onclick="copyClientKey()">复制</button>
+            </div>
             <div class="mt-4">
                 <div class="alert">
                     <span id="clientKey" class="break-all font-mono"></span>
@@ -152,7 +158,11 @@
     <dialog id="feedbackModal" class="modal modal-top ">
         <div class="max-w-sm mx-auto pointer-events-none">
             <div id="feedbackContent" class="alert shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 <span id="feedbackMessage">操作成功</span>
             </div>
         </div>
@@ -219,7 +229,7 @@
             const clientStatus = document.getElementById('clientStatus');
             const showKeyBtn = document.getElementById('showKeyBtn');
             const deleteClientBtn = document.getElementById('deleteClientBtn');
-            
+
             document.getElementById('addTunnelBtn').disabled = !clientId;
             showKeyBtn.disabled = !clientId;
             deleteClientBtn.disabled = !clientId;
@@ -293,31 +303,31 @@
             fetch(`/api/clients/${clientId}`, {
                 method: 'POST',
             })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => Promise.reject(text));
-                }
-                closeClientModal();
-                // 先加载客户端列表
-                return fetch('/api/clients/')
-                    .then(response => response.json())
-                    .then(clients => {
-                        const select = document.getElementById('clientSelect');
-                        select.innerHTML = '<option value="">选择客户端</option>';
-                        clients.forEach(client => {
-                            select.innerHTML += `<option value="${client}">${client}</option>`;
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => Promise.reject(text));
+                    }
+                    closeClientModal();
+                    // 先加载客户端列表
+                    return fetch('/api/clients/')
+                        .then(response => response.json())
+                        .then(clients => {
+                            const select = document.getElementById('clientSelect');
+                            select.innerHTML = '<option value="">选择客户端</option>';
+                            clients.forEach(client => {
+                                select.innerHTML += `<option value="${client}">${client}</option>`;
+                            });
+                            // 选择新添加的客户端
+                            select.value = clientId;
+                            // 触发 change 事件以加载隧道列表
+                            select.dispatchEvent(new Event('change'));
+                            showFeedback(true, '客户端添加成功');
                         });
-                        // 选择新添加的客户端
-                        select.value = clientId;
-                        // 触发 change 事件以加载隧道列表
-                        select.dispatchEvent(new Event('change'));
-                        showFeedback(true, '客户端添加成功');
-                    });
-            })
-            .catch(error => {
-                console.error('添加客户端失败:', error);
-                showFeedback(false, error || '添加客户端失败');
-            });
+                })
+                .catch(error => {
+                    console.error('添加客户端失败:', error);
+                    showFeedback(false, error || '添加客户端失败');
+                });
         }
 
         // 隧道相关操作
@@ -343,7 +353,7 @@
             const clientId = document.getElementById('clientSelect').value;
             const publicPort = parseInt(document.getElementById('publicPort').value);
             const internalPort = parseInt(document.getElementById('internalPort').value);
-            
+
             const tunnelData = {
                 client_id: clientId,
                 public_protocol: document.getElementById('protocol').value,
@@ -363,12 +373,12 @@
             // 验证端口号
             if (!publicPort || publicPort < 1 || publicPort > 65535 ||
                 !internalPort || internalPort < 1 || internalPort > 65535) {
-                showFeedback(false, '请输入有效的端口号(1-65535)');
+                showFeedback(false, '请输入有效的端口(1-65535)');
                 return;
             }
             console.log(editingTunnelId);
             const method = editingTunnelId ? 'PUT' : 'POST';
-            const url = editingTunnelId 
+            const url = editingTunnelId
                 ? `/api/clients/${clientId}/tunnels/${editingTunnelId}`
                 : `/api/clients/${clientId}/tunnels`;
 
@@ -379,20 +389,20 @@
                 },
                 body: JSON.stringify(tunnelData)
             })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => Promise.reject(text));
-                }
-                closeTunnelModal();
-                loadTunnels();
-                showFeedback(true, method === 'PUT' ? '隧道更新成功' : '隧道添加成功');
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => Promise.reject(text));
+                    }
+                    closeTunnelModal();
+                    loadTunnels();
+                    showFeedback(true, method === 'PUT' ? '隧道更新成功' : '隧道添加成功');
 
-            })
-            .catch(error => {
-                console.error(method === 'PUT' ? '更新隧道失败:' : '添加隧道失败:', error);
-                loadTunnels();
-                showFeedback(false, error || (method === 'PUT' ? '更新隧道失败' : '添加隧道失败'));
-            });
+                })
+                .catch(error => {
+                    console.error(method === 'PUT' ? '更新隧道失败:' : '添加隧道失败:', error);
+                    loadTunnels();
+                    showFeedback(false, error || (method === 'PUT' ? '更新隧道失败' : '添加隧道失败'));
+                });
 
         }
 
@@ -407,7 +417,7 @@
         function showClientKey() {
             const clientId = document.getElementById('clientSelect').value;
             if (!clientId) return;
-            
+
             fetch(`/api/clients/${clientId}/key`)
                 .then(response => {
                     if (!response.ok) {
@@ -442,18 +452,18 @@
                 fetch(`/api/clients/${clientToDelete}/tunnels/${tunnelToDelete}`, {
                     method: 'DELETE'
                 })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(text => Promise.reject(text));
-                    }
-                    document.getElementById('deleteModal').close();
-                    loadTunnels();
-                    showFeedback(true, '隧道删除成功');
-                })
-                .catch(error => {
-                    console.error('删除隧道失败:', error);
-                    showFeedback(false, error || '删除隧道失败');
-                });
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.text().then(text => Promise.reject(text));
+                        }
+                        document.getElementById('deleteModal').close();
+                        loadTunnels();
+                        showFeedback(true, '隧道删除成功');
+                    })
+                    .catch(error => {
+                        console.error('删除隧道失败:', error);
+                        showFeedback(false, error || '删除隧道失败');
+                    });
                 tunnelToDelete = null;
                 clientToDelete = null;
             }
@@ -491,7 +501,7 @@
                 })
                 .catch(error => {
                     console.error('获取隧道信息失败:', error);
-                    showFeedback(false, error || '获取隧道信息失败');
+                    showFeedback(false, error || '获取隧道信息失��');
                 });
         }
 
@@ -506,7 +516,7 @@
         function showFeedback(success, message) {
             const feedbackContent = document.getElementById('feedbackContent');
             const feedbackModal = document.getElementById('feedbackModal');
-            
+
             // 设置样式
             if (success) {
                 feedbackContent.className = 'alert alert-success shadow-lg';
@@ -521,10 +531,10 @@
                     <span>${message || '操作失败'}</span>
                 `;
             }
-            
+
             // 显示反馈
             feedbackModal.classList.add('modal-open');
-            
+
             // 2秒后自动关闭
             setTimeout(() => {
                 feedbackModal.classList.remove('modal-open');
@@ -543,20 +553,33 @@
             fetch(`/api/clients/${clientId}`, {
                 method: 'DELETE',
             })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => Promise.reject(text));
-                }
-                document.getElementById('deleteClientModal').close();
-                document.getElementById('clientSelect').value = '';
-                loadClients();
-                loadTunnels();
-                showFeedback(true, '客户端删除成功');
-            })
-            .catch(error => {
-                console.error('删除客户端失败:', error);
-                showFeedback(false, error || '删除客户端失败');
-            });
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => Promise.reject(text));
+                    }
+                    document.getElementById('deleteClientModal').close();
+                    document.getElementById('clientSelect').value = '';
+                    loadClients();
+                    loadTunnels();
+                    showFeedback(true, '客户端删除成功');
+                })
+                .catch(error => {
+                    console.error('删除客户端失败:', error);
+                    showFeedback(false, error || '删除客户端失败');
+                });
+        }
+
+        // 添加复制功能的 JavaScript
+        function copyClientKey() {
+            const key = document.getElementById('clientKey').textContent;
+            navigator.clipboard.writeText(key)
+                .then(() => {
+                    showFeedback(true, '密钥已复制到剪贴板');
+                })
+                .catch(err => {
+                    console.error('复制失败:', err);
+                    showFeedback(false, '复制失败');
+                });
         }
     </script>
 </body>

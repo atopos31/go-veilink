@@ -5,6 +5,7 @@ import (
 	"embed"
 	"flag"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/signal"
@@ -66,17 +67,25 @@ var staticFiles embed.FS
 
 func webServer(handler *handler.ServerHandler) http.Handler {
 	r := gin.Default()
-	httpFS := http.FS(htmlFiles)
-	staticFS := http.FS(staticFiles)
+	htmlFS, err := fs.Sub(htmlFiles, "web")
+	if err != nil {
+		panic(err)
+	}
+
+	staticFS, err := fs.Sub(staticFiles, "web")
+	if err != nil {
+		panic(err)
+	}
+
 	r.GET("/login", func(ctx *gin.Context) {
-		ctx.FileFromFS("/web/login.html", httpFS)
+		ctx.FileFromFS("login.html", http.FS(htmlFS))
 	})
 
 	r.GET("/", handler.Auth, func(ctx *gin.Context) {
-		ctx.FileFromFS("/web/home.html", httpFS)
+		ctx.FileFromFS("home.html", http.FS(htmlFS))
 	})
 
-	r.StaticFS("/static", staticFS)
+	r.StaticFS("/static", http.FS(staticFS))
 
 	api := r.Group("/api")
 	api.GET("/access", handler.Access)

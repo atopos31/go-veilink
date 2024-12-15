@@ -4,7 +4,7 @@ build:
 	@echo "Build success see ./bin/veilink_server_$(os)_$(arch)$(suffix)"
 
 runs:
-	@go run ./cmd/server/server.go -c ./internal/config/server.yaml
+	@go run ./cmd/server/server.go -c ./internal/config/dev.yaml
 
 runc:
 	@go run ./cmd/client/client.go

@@ -2,3 +2,4 @@
 bin
 key
 cmd/server/web/tailwindcss
+internal/config/dev.yaml

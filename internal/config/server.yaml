@@ -7,4 +7,14 @@ gateway:
     ip: 0.0.0.0
     port: 9528
     debug_info: true
-clients: []
+clients:
+    - client_id: test
+      listeners:
+        - client_id: test
+          encrypt: false
+          debug_info: false
+          public_protocol: tcp
+          public_ip: 0.0.0.0
+          public_port: 8922
+          internal_ip: 127.0.0.1
+          internal_port: 22

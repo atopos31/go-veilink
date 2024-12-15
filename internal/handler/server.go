@@ -44,7 +44,7 @@ func (s *ServerHandler) Access(ctx *gin.Context) {
 }
 
 func (s *ServerHandler) GetClients(ctx *gin.Context) {
-	var clientIDs []string
+	clientIDs := make([]string, 0)
 	for _, client := range s.app.Config().Clients {
 		clientIDs = append(clientIDs, client.ClientID)
 	}

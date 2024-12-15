@@ -7,24 +7,4 @@ gateway:
     ip: 0.0.0.0
     port: 9528
     debug_info: true
-clients:
-    - client_id: test
-      listeners:
-        - client_id: test
-          encrypt: false
-          debug_info: false
-          public_protocol: udp
-          public_ip: 0.0.0.0
-          public_port: 645
-          internal_ip: 127.0.0.1
-          internal_port: 33
-        - client_id: test
-          encrypt: false
-          debug_info: false
-          public_protocol: tcp
-          public_ip: 0.0.0.0
-          public_port: 9092
-          internal_ip: 127.0.0.1
-          internal_port: 9876
-    - client_id: dawda
-      listeners: []
+clients: []

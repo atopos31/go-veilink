@@ -1,12 +1,8 @@
 # VEILINK
-Go语言实现的轻量级内网穿透工具，配置简单易用。
-- TCP/UDP协议支持
-- 流式chacha20加密
-- webui动态管理
-## 编译
-```bash
-$ make build os=linux arch=amd64
-```
+Go语言实现的轻量级内网穿透工具，配置简单，仅需一个可执行文件即可运行。
+- 支持TCP/UDP协议
+- 支持流式chacha20加密
+- 支持服务端webui动态管理，无需修改客户端
 ## 运行
 ### Server
 自行修改server.yaml配置
@@ -52,13 +48,18 @@ $ ./bin/veilink_client_linux_amd64 -ip=[server ip] -port=[server port] -id=[clie
 ```
 ## Webui
 访问http://[server ip]:[webui port]，输入access_key，即可访问webui。
+
 ![alt text](./docs/webui.png)
+## 自行编译
+```bash
+$ make build os=linux arch=amd64
+```
 ## 原理图
 ![](./docs/velink_back.drawio.png)
 ## 关于流式加密
-- 服务端启动时，若某个客户端的任意协议穿透开启加密，则会随机生成一个32字节密钥，并使用Base64编码为字符串后输出到控制台和./key/[client_id].key。
-- 客户端启动时将该Key编码后的字符串作为参数传入，若客户端开启加密，则使用该Key对数据进行加密。
-- 服务端会发送一条消息到客户端，指示客户端是否开启加密。
+- 服务端启动时，会为每个客户端生成一个32字节密钥，该密钥仅能通过webui查看，重启后密钥会重新生成。
+- 客户端启动时将该Key编码后的字符串作为参数传入，若客户端某隧道开启加密，则使用该Key对数据进行加密。
+- 服务端会发送一条消息到客户端，指示客户端隧道是否开启加密。
 - 通过该Key，服务端和客户端都会重写tunnelConn的Write和Read方法，开启流式加密传输。
 ### 示意图
 ![](./docs/TCPencrytp.drawio.png)

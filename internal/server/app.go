@@ -9,7 +9,6 @@ import (
 
 	"github.com/atopos31/go-veilink/internal/common"
 	"github.com/atopos31/go-veilink/internal/config"
-	"github.com/atopos31/go-veilink/pkg"
 	"github.com/google/uuid"
 )
 
@@ -102,7 +101,7 @@ func (a *App) GetKey(clientID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return pkg.KeyByteToString(key), nil
+	return common.KeyByteToString(key), nil
 }
 
 func (a *App) GetClient(clientID string) (*config.Client, error) {

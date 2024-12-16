@@ -1,4 +1,4 @@
-package pkg
+package common
 
 import "time"
 
@@ -7,4 +7,8 @@ type VeilConn interface {
 	Write(p []byte) (int, error)
 	Close() error
 	SetWriteDeadline(t time.Time) error
+}
+
+type ConnWithClose interface {
+	Close() error
 }

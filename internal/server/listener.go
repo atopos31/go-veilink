@@ -10,7 +10,6 @@ import (
 
 	"github.com/atopos31/go-veilink/internal/common"
 	"github.com/atopos31/go-veilink/internal/config"
-	"github.com/atopos31/go-veilink/pkg"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,7 +24,6 @@ type Listener struct {
 	Key            []byte
 	sessionMgr     *SessionManager
 	closeOnce      sync.Once
-	close          chan struct{}
 	listener       common.ConnWithClose
 	udpSessionMgr  *UDPSessionManage
 	ioData         *IOdata
@@ -37,7 +35,6 @@ func NewListener(listenerConfig *config.Listener, key []byte, sessionMgr *Sessio
 		Encrypt:        listenerConfig.Encrypt,
 		Key:            key,
 		listenerConfig: listenerConfig,
-		close:          make(chan struct{}),
 		sessionMgr:     sessionMgr,
 		udpSessionMgr:  udpSessionMgr,
 		ioData:         new(IOdata),
@@ -90,7 +87,7 @@ func (l *Listener) handleConn(conn net.Conn) {
 		return
 	}
 	if l.Encrypt {
-		tunnelConn, err = pkg.NewChacha20Stream(l.Key, tunnelConn)
+		tunnelConn, err = common.NewChacha20Stream(l.Key, tunnelConn)
 		if err != nil {
 			logrus.Warnf("new chacha20 stream fail: %v", err)
 			return
@@ -101,7 +98,7 @@ func (l *Listener) handleConn(conn net.Conn) {
 		return
 	}
 
-	in, out := pkg.Join(conn, tunnelConn)
+	in, out := common.Join(conn, tunnelConn)
 	// add io data
 	l.ioData.AddInput(in)
 	l.ioData.AddOutput(out)
@@ -139,7 +136,7 @@ func (l *Listener) listenerAndServerUDP() error {
 				}
 
 				if l.Encrypt {
-					tunnelConn, err = pkg.NewChacha20Stream(l.Key, tunnelConn)
+					tunnelConn, err = common.NewChacha20Stream(l.Key, tunnelConn)
 					if err != nil {
 						logrus.Warnf("new chacha20 stream fail: %v", err)
 						continue
@@ -160,7 +157,7 @@ func (l *Listener) listenerAndServerUDP() error {
 				go l.udpReadFormClient(tunnelConn, remoteAddr, udpListener)
 			}
 
-			packet := pkg.UDPpacket(buffer[:n])
+			packet := common.UDPpacket(buffer[:n])
 			body, err := packet.Encode()
 			if err != nil {
 				logrus.Warnf("encode udp packet fail: %v", err)
@@ -178,8 +175,8 @@ func (l *Listener) listenerAndServerUDP() error {
 	return nil
 }
 
-func (l *Listener) udpReadFormClient(tunnelconn pkg.VeilConn, raddr net.Addr, conn net.PacketConn) {
-	buffer := pkg.UDPpacket{}
+func (l *Listener) udpReadFormClient(tunnelconn common.VeilConn, raddr net.Addr, conn net.PacketConn) {
+	buffer := common.UDPpacket{}
 	for {
 		err := buffer.Decode(tunnelconn)
 		if err != nil {
@@ -201,8 +198,8 @@ func (l *Listener) udpReadFormClient(tunnelconn pkg.VeilConn, raddr net.Addr, co
 }
 
 // Inform the client whether the current connection is encrypted.
-func (l *Listener) sendEncryptProtocol(conn pkg.VeilConn) error {
-	enc := &pkg.EncryptProtocl{}
+func (l *Listener) sendEncryptProtocol(conn common.VeilConn) error {
+	enc := &common.EncryptProtocl{}
 	encByte := enc.Encode(l.Encrypt)
 	conn.SetWriteDeadline(time.Now().Add(writeTimeout))
 	_, err := conn.Write(encByte)
@@ -211,8 +208,8 @@ func (l *Listener) sendEncryptProtocol(conn pkg.VeilConn) error {
 }
 
 // Inform the client of the specific IP and port that need to be tunneled into the internal network.
-func (l *Listener) sendVeilinkProtocol(conn pkg.VeilConn) error {
-	pp := &pkg.VeilinkProtocol{
+func (l *Listener) sendVeilinkProtocol(conn common.VeilConn) error {
+	pp := &common.VeilinkProtocol{
 		ClientID:       l.listenerConfig.ClientID,
 		PublicProtocol: l.listenerConfig.PublicProtocol,
 		PublicIP:       l.listenerConfig.PublicIP,
@@ -231,34 +228,8 @@ func (l *Listener) sendVeilinkProtocol(conn pkg.VeilConn) error {
 }
 func (l *Listener) Close() {
 	l.closeOnce.Do(func() {
-		close(l.close)
 		if l.listener != nil {
 			l.listener.Close()
 		}
 	})
-}
-
-func (l *Listener) PrintDebugInfo() {
-	logrus.Debug(fmt.Sprintf("Listener: server %s:%d <=Veilink %s=>client %s %s:%d",
-		l.listenerConfig.PublicIP,
-		l.listenerConfig.PublicPort,
-		l.listenerConfig.PublicProtocol,
-		l.listenerConfig.ClientID,
-		l.listenerConfig.InternalIP,
-		l.listenerConfig.InternalPort,
-	))
-}
-
-func (l *Listener) DebugInfoTicker(d time.Duration) {
-	ticker := time.NewTicker(d)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-l.close:
-			return
-		case <-ticker.C:
-			l.PrintDebugInfo()
-			logrus.Debugf("listener: %s in: %d bytes, out: %d bytes", l.listenerConfig.ClientID, l.ioData.GetInput(), l.ioData.GetOutput())
-		}
-	}
 }

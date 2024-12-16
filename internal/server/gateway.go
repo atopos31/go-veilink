@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/atopos31/go-veilink/internal/common"
 	"github.com/atopos31/go-veilink/internal/config"
-	"github.com/atopos31/go-veilink/pkg"
 	"github.com/sirupsen/logrus"
 )
 
@@ -47,7 +47,7 @@ func (g *Gateway) Run() error {
 }
 
 func (g *Gateway) handleConn(conn net.Conn) {
-	handshakeReq := &pkg.HandshakeReq{}
+	handshakeReq := &common.HandshakeReq{}
 	if err := handshakeReq.Decode(conn); err != nil {
 		logrus.Errorf("failed to decode handshake request %v", err)
 		conn.Close()

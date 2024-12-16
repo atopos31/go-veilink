@@ -6,8 +6,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/atopos31/go-veilink/internal/common"
 	"github.com/atopos31/go-veilink/internal/config"
-	"github.com/atopos31/go-veilink/pkg"
 	"github.com/sirupsen/logrus"
 	"github.com/xtaci/smux"
 )
@@ -43,7 +43,7 @@ func (c *Client) run() error {
 		return err
 	}
 	defer conn.Close()
-	handshakeReq := pkg.HandshakeReq{ClientID: c.clientID}
+	handshakeReq := common.HandshakeReq{ClientID: c.clientID}
 	buf, err := handshakeReq.Encode()
 	if err != nil {
 		return err
@@ -76,28 +76,28 @@ func (c *Client) run() error {
 	}
 }
 
-func (c *Client) handleStream(tunnelConn pkg.VeilConn) {
+func (c *Client) handleStream(tunnelConn common.VeilConn) {
 	defer tunnelConn.Close()
-	enc := &pkg.EncryptProtocl{}
+	enc := &common.EncryptProtocl{}
 	encryptOn, err := enc.Check(tunnelConn)
 	if err != nil {
 		logrus.Errorf("Check error: %v", err)
 		return
 	}
 	if encryptOn {
-		byteKey, err := pkg.KeyStringToByte(c.key)
+		byteKey, err := common.KeyStringToByte(c.key)
 		if err != nil {
 			logrus.Errorf("KeyStringToByte error: %v", err)
 			return
 		}
-		tunnelConn, err = pkg.NewChacha20Stream(byteKey, tunnelConn)
+		tunnelConn, err = common.NewChacha20Stream(byteKey, tunnelConn)
 		if err != nil {
 			logrus.Errorf("NewChacha20Stream error: %v", err)
 			return
 		}
 	}
 
-	vp := &pkg.VeilinkProtocol{}
+	vp := &common.VeilinkProtocol{}
 	if err = vp.Decode(tunnelConn); err != nil {
 		logrus.Errorf("Decode error: %v", err)
 		return
@@ -111,7 +111,7 @@ func (c *Client) handleStream(tunnelConn pkg.VeilConn) {
 			logrus.Errorf("Dial error: %v", err)
 			return
 		}
-		in, out := pkg.Join(localConn, tunnelConn)
+		in, out := common.Join(localConn, tunnelConn)
 		logrus.Infof("in: %d bytes, out: %d bytes", in, out)
 	case "udp":
 		localConn, err = net.Dial("udp", fmt.Sprintf("%s:%d", vp.InternalIP, vp.InternalPort))
@@ -129,7 +129,7 @@ func (c *Client) handleStream(tunnelConn pkg.VeilConn) {
 					logrus.Errorf("Decode error: %v", err)
 					break
 				}
-				p := pkg.UDPpacket(buf[:nr])
+				p := common.UDPpacket(buf[:nr])
 				body, err := p.Encode()
 				if err != nil {
 					logrus.Errorf("Encode error: %v", err)
@@ -144,7 +144,7 @@ func (c *Client) handleStream(tunnelConn pkg.VeilConn) {
 			}
 		}()
 
-		p := pkg.UDPpacket{}
+		p := common.UDPpacket{}
 		for {
 			err := p.Decode(tunnelConn)
 			if err != nil {

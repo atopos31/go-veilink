@@ -1,4 +1,4 @@
-package pkg
+package common
 
 import "testing"
 
@@ -7,6 +7,5 @@ func TestGenKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	WriteKeyToFile("testkey", "test", KeyByteToString(key))
 	t.Log(KeyByteToString(key))
 }

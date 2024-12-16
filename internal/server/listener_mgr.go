@@ -5,8 +5,8 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/atopos31/go-veilink/internal/common"
 	"github.com/atopos31/go-veilink/internal/config"
-	"github.com/atopos31/go-veilink/pkg"
 )
 
 type ListenerMgr struct {
@@ -53,7 +53,7 @@ func (lm *ListenerMgr) AddClient(clientID string) error {
 		return errors.New("client id already exists")
 	}
 	lm.listenersMap[clientID] = make([]*Listener, 0)
-	key, err := pkg.GenChacha20Key()
+	key, err := common.GenChacha20Key()
 	if err != nil {
 		return err
 	}

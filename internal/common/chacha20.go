@@ -1,18 +1,14 @@
-package pkg
+package common
 
 import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"io"
-	"os"
-	"strings"
 	"time"
 
 	"golang.org/x/crypto/chacha20"
 )
-
-const DefaultKeyPath = "./key"
 
 type Chacha20Stream struct {
 	key     []byte
@@ -97,28 +93,4 @@ func KeyStringToByte(key string) ([]byte, error) {
 
 func KeyByteToString(key []byte) string {
 	return base64.StdEncoding.EncodeToString(key)
-}
-
-func WriteKeyToFile(keyPath string, clientID string, key string) error {
-	keyFilePath := strings.Builder{}
-	keyFilePath.WriteString(keyPath)
-	keyFilePath.WriteRune(os.PathSeparator)
-	keyFilePath.WriteString(clientID)
-	keyFilePath.WriteString(".key")
-
-	err := os.MkdirAll(keyPath, os.ModeDir)
-	if err != nil {
-		return err
-	}
-
-	file, err := os.OpenFile(keyFilePath.String(), os.O_CREATE|os.O_WRONLY, 0600)
-	if err != nil {
-		return err
-	}
-
-	defer file.Close()
-	if _, err := file.WriteString(key); err != nil {
-		return err
-	}
-	return nil
 }

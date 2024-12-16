@@ -54,6 +54,8 @@ $ ./bin/veilink_client_linux_amd64 -ip=[server ip] -port=[server port] -id=[clie
 ```bash
 $ make build os=linux arch=amd64
 ```
+## TODO
+- webui增加日志查看
 ## 原理图
 ![](./docs/velink_back.drawio.png)
 ## 关于流式加密

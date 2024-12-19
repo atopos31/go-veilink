@@ -62,7 +62,7 @@ func main() {
 //go:embed web/*.html
 var htmlFiles embed.FS
 
-//go:embed web/*.css web/*.ico
+//go:embed web/*.css web/*.ico web/*.js
 var staticFiles embed.FS
 
 func webServer(handler *handler.ServerHandler) http.Handler {

@@ -111,6 +111,8 @@ func (c *Client) handleStream(tunnelConn common.VeilConn) {
 			logrus.Errorf("Dial error: %v", err)
 			return
 		}
+		defer localConn.Close()
+
 		in, out := common.Join(localConn, tunnelConn)
 		logrus.Infof("in: %d bytes, out: %d bytes", in, out)
 	case "udp":

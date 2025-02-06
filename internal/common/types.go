@@ -31,13 +31,12 @@ var (
 
 // VeilinkProtocol Veilink协议
 type VeilinkProtocol struct {
-	ClientID         string // 客户端ID
-	PublicProtocol   string // 外网协议
-	PublicIP         string // 外网IP
-	PublicPort       uint16 // 外网端口
-	InternalProtocol string // 内网协议
-	InternalIP       string // 内网IP
-	InternalPort     uint16 // 内网端口
+	ClientID       string // 客户端ID
+	PublicProtocol string // 外网协议
+	PublicIP       string // 外网IP
+	PublicPort     uint16 // 外网端口
+	InternalIP     string // 内网IP
+	InternalPort   uint16 // 内网端口
 }
 
 func (vp *VeilinkProtocol) Encode() ([]byte, error) {

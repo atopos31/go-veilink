@@ -17,6 +17,11 @@ var (
 	writeTimeout = time.Second * 3
 )
 
+const (
+	TCP = "tcp"
+	UDP = "udp"
+)
+
 type Listener struct {
 	Uuid           string
 	listenerConfig *config.Listener
@@ -43,9 +48,9 @@ func NewListener(listenerConfig *config.Listener, key []byte, sessionMgr *Sessio
 
 func (l *Listener) ListenAndServe() error {
 	switch l.listenerConfig.PublicProtocol {
-	case "tcp":
+	case TCP:
 		return l.listenerAndServerTCP()
-	case "udp":
+	case UDP:
 		return l.listenerAndServerUDP()
 	default:
 		return fmt.Errorf("TODO://")
@@ -82,6 +87,8 @@ func (l *Listener) handleConn(conn net.Conn) {
 		logrus.Warnf("get session fail: %v", err)
 		return
 	}
+	defer tunnelConn.Close()
+
 	if err := l.sendEncryptProtocol(tunnelConn); err != nil {
 		logrus.Warnf("send encrypt protocol fail: %v", err)
 		return

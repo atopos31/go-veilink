@@ -5,16 +5,16 @@ webui:
     ip: 0.0.0.0
 gateway:
     ip: 0.0.0.0
-    port: 9528
+    port: 9527
     debug_info: true
 clients:
-    - client_id: test
+    - client_id: nanopc
       listeners:
-        - client_id: test
+        - client_id: nanopc
           encrypt: false
           debug_info: false
           public_protocol: tcp
           public_ip: 0.0.0.0
-          public_port: 8922
+          public_port: 11122
           internal_ip: 127.0.0.1
           internal_port: 22

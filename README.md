@@ -50,9 +50,9 @@ $ ./bin/veilink_client_linux_amd64 -ip=[server ip] -port=[server port] -id=[clie
 访问http://[server ip]:[webui port]，输入access_key，即可访问webui。
 
 ![alt text](./docs/webui.png)
-## 自行编译
+## 编译
 ```bash
-$ make build os=linux arch=amd64
+$ make build
 ```
 ## TODO
 - webui增加日志查看

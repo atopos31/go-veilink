@@ -156,5 +156,4 @@ func (s *ServerHandler) UpdateClientTunnel(ctx *gin.Context) {
 	} else {
 		ctx.String(http.StatusOK, "tunnel updated")
 	}
-
 }
